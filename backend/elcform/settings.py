@@ -21,6 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-i&kex6#udp^l0s-lst34mwqpeuj&i!=3a=fre4lv#7*e=1=kq9'
+HASHID_FIELD_SALT = 'c9Lrync^SeeZ8qP2hVoK#@XnD&M6jY&N'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -37,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'survey'
 ]
 
 MIDDLEWARE = [
