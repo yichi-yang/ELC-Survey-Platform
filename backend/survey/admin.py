@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (Survey, SurveyQuestion, SurveyQuestionChoice,
-                     SurveyQuestionScaleMeta, SurveySubmission, SurveyResponse)
+                     SurveySubmission, SurveyResponse)
 
 # Register your models here.
 
@@ -12,24 +12,19 @@ class SurveyAdmin(admin.ModelAdmin):
 
 @admin.register(SurveyQuestion)
 class SurveyQuestionAdmin(admin.ModelAdmin):
-    pass
+    readonly_fields = ('id', )
 
 
 @admin.register(SurveyQuestionChoice)
 class SurveyQuestionChoiceAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(SurveyQuestionScaleMeta)
-class SurveyQuestionScaleMetaAdmin(admin.ModelAdmin):
-    pass
+    readonly_fields = ('id', )
 
 
 @admin.register(SurveySubmission)
 class SurveySubmissionAdmin(admin.ModelAdmin):
-    readonly_fields = ('submission_time',)
+    readonly_fields = ('id', 'submission_time',)
 
 
 @admin.register(SurveyResponse)
 class SurveyResponseAdmin(admin.ModelAdmin):
-    pass
+    readonly_fields = ('id', )

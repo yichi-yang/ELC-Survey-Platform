@@ -1,8 +1,8 @@
-from tkinter import CASCADE
 from django.db import models
-from hashid_field import HashidAutoField
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+from hashid_field import HashidAutoField
+from datetime import datetime
 from .utils import build_auto_salt
 
 
@@ -23,6 +23,19 @@ class Survey(models.Model):
     def __str__(self):
         return f'Survey id={self.id} title={self.title!r}'
 
+    @property
+    def is_active(self) -> bool:
+        now = datetime.now()
+        if self.start_date_time and now < self.start_date_time:
+            return False
+        if self.end_date_time and now > self.end_date_time:
+            return False
+        return self.active
+
+    @property
+    def required_questions(self):
+        return self.questions.filter(required=True)
+
 
 class SurveyQuestion(models.Model):
 
@@ -32,19 +45,29 @@ class SurveyQuestion(models.Model):
         DROPDOWN = 'DP', _('Dropdown')
         SCALE = 'SC', _('Scale')
         SHORT_ANSWER = 'SA', _('Short Answer')
-        PARAGRAPH = 'PA', _('LONG Answer')
+        PARAGRAPH = 'PA', _('Long Answer')
 
     id = HashidAutoField(
-        primary_key=True, salt=build_auto_salt('SurveyQuestion'))
-    survey = models.ForeignKey(Survey, on_delete=models.CASCADE)
+        primary_key=True,
+        salt=build_auto_salt('SurveyQuestion')
+    )
+    survey = models.ForeignKey(
+        Survey,
+        on_delete=models.CASCADE,
+        related_name='questions'
+    )
     number = models.IntegerField()
     title = models.CharField(max_length=200)
     required = models.BooleanField()
-    hidden = models.BooleanField(default=False)
     type = models.CharField(
         max_length=2,
         choices=QuestionType.choices
     )
+    # used for SCALE type
+    range_min = models.FloatField(null=True, blank=True)
+    range_max = models.FloatField(null=True, blank=True)
+    range_default = models.FloatField(null=True, blank=True)
+    range_step = models.FloatField(null=True, blank=True)
 
     def __str__(self):
         return f'SurveyQuestion id={self.id} survey={self.survey.id} title={self.title!r}'
@@ -56,25 +79,16 @@ class SurveyQuestionChoice(models.Model):
         primary_key=True,
         salt=build_auto_salt('SurveyQuestionChoice')
     )
-    question = models.ForeignKey(SurveyQuestion, on_delete=models.CASCADE)
+    question = models.ForeignKey(
+        SurveyQuestion,
+        on_delete=models.CASCADE,
+        related_name='choices'
+    )
     value = models.CharField(max_length=32)
     description = models.CharField(max_length=200)
-    hidden = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'SurveyQuestionChoice question={self.question.id} value={self.value!r}'
-
-
-class SurveyQuestionScaleMeta(models.Model):
-
-    question = models.ForeignKey(SurveyQuestion, on_delete=models.CASCADE)
-    min = models.FloatField()
-    max = models.FloatField()
-    default = models.FloatField()
-    step = models.FloatField(default=1)
-
-    def __str__(self):
-        return f'SurveyQuestionScaleMeta question={self.question.id}'
+        return f'SurveyQuestionChoice id={self.id} question={self.question.id} value={self.value!r}'
 
 
 class SurveySubmission(models.Model):
@@ -98,11 +112,19 @@ class SurveySubmission(models.Model):
 
 class SurveyResponse(models.Model):
 
-    submission = models.ForeignKey(SurveySubmission, on_delete=models.CASCADE)
-    question = models.ForeignKey(SurveyQuestion, on_delete=models.CASCADE)
+    submission = models.ForeignKey(
+        SurveySubmission,
+        on_delete=models.CASCADE,
+        related_name='responses'
+    )
+    question = models.ForeignKey(
+        SurveyQuestion,
+        on_delete=models.CASCADE,
+        related_name='responses'
+    )
     choice = models.ForeignKey(
         SurveyQuestionChoice,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True
     )
