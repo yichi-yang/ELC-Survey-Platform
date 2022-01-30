@@ -2,6 +2,7 @@ from rest_framework import serializers
 from hashid_field.rest import HashidSerializerCharField
 from django.utils.translation import gettext_lazy as _
 from .models import Survey, SurveyQuestion, SurveyQuestionChoice, SurveyResponse, SurveySubmission
+from .validators import OwnedByRequestUser
 
 
 class ContextPKRelatedDefault:
@@ -39,6 +40,20 @@ class ContextPKRelatedDefault:
             self.fail('incorrect_type', data_type=type(pk).__name__)
 
 
+class SerializerContextDefault:
+    """
+    May be applied as a `default=...` value on a serializer field.
+    Retrieves a value from serializer context as the default value.
+    """
+    requires_context = True
+
+    def __init__(self, get_value):
+        self.get_value = get_value
+
+    def __call__(self, serializer_field):
+        return self.get_value(serializer_field.context)
+
+
 class SurveySerializer(serializers.ModelSerializer):
     id = HashidSerializerCharField(
         source_field='survey.Survey.id',
@@ -69,10 +84,10 @@ class NestedSurveyQuestionSerializer(serializers.ModelSerializer):
         read_only=True
     )
     survey = serializers.HiddenField(
-        default=ContextPKRelatedDefault(
-            Survey,
-            lambda context: context['view'].kwargs['survey_pk']
-        )
+        default=SerializerContextDefault(
+            lambda context: context['view'].parent_instance
+        ),
+        validators=[OwnedByRequestUser()]
     )
     choices = NestedSurveyQuestionChoiceSerializer(many=True, required=False)
 
@@ -279,9 +294,8 @@ class NestedSurveySubmissionSerializer(serializers.ModelSerializer):
         read_only=True
     )
     survey = serializers.HiddenField(
-        default=ContextPKRelatedDefault(
-            Survey,
-            lambda context: context['view'].kwargs['survey_pk']
+        default=SerializerContextDefault(
+            lambda context: context['view'].parent_instance
         )
     )
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
@@ -298,10 +312,19 @@ class NestedSurveySubmissionSerializer(serializers.ModelSerializer):
         """
 
         count = dict()
+        seen_choices = set()
 
         for response in data['responses']:
             question = response['question']
             count[question] = count.get(question, 0) + 1
+            if question.choice is not None:
+                if question.choice in seen_choices:
+                    raise serializers.ValidationError(
+                        _("Can't select the same choice (id={c_id}) twice.").format(
+                            c_id=question.choice.id
+                        )
+                    )
+                seen_choices.add(question.choice)
 
         for question in data['survey'].questions.all():
             if question in count:
