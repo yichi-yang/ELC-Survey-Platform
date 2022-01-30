@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from hashid_field import HashidAutoField
-from datetime import datetime
+from django.utils import timezone
 from .utils import build_auto_salt
 
 
@@ -25,7 +25,7 @@ class Survey(models.Model):
 
     @property
     def is_active(self) -> bool:
-        now = datetime.now()
+        now = timezone.now()
         if self.start_date_time and now < self.start_date_time:
             return False
         if self.end_date_time and now > self.end_date_time:

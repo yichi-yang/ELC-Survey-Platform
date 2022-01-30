@@ -1,4 +1,7 @@
-from rest_framework import viewsets, permissions, mixins
+from django.db.models import Q, QuerySet
+from django.utils import timezone
+from rest_framework import viewsets, mixins
+from rest_framework.generics import get_object_or_404
 from .models import Survey, SurveyQuestion, SurveySubmission
 from .serializers import (
     SurveySerializer,
@@ -8,36 +11,122 @@ from .serializers import (
     NestedSurveySubmissionSerializer
 )
 from .utils import handle_invalid_hashid
+from .permissions import (
+    IsSurveyOwner,
+    ReadOnlyWhenSurveyActive,
+    IsParentSurveyOwner,
+    ReadOnlyWhenParentSurveyActive,
+    CreateOnlyWhenParentSurveyActive
+)
+
+
+class NestedViewMixIn:
+    """
+    Sets self.parent_instance based on captured parent pk.
+    """
+    parent_model_queryset = None
+    parent_pk_name = None
+
+    def initial(self, request, *args, **kwargs):
+
+        assert self.parent_model_queryset is not None, (
+            "'%s' should include a `parent_model_queryset` attribute."
+            % self.__class__.__name__
+        )
+
+        assert self.parent_pk_name is not None, (
+            "'%s' should include a `parent_pk_name` attribute."
+            % self.__class__.__name__
+        )
+
+        queryset = self.parent_model_queryset
+        if isinstance(queryset, QuerySet):
+            # Ensure queryset is re-evaluated on each request.
+            queryset = queryset.all()
+
+        self.parent_instance = get_object_or_404(
+            queryset,
+            pk=self.kwargs[self.parent_pk_name]
+        )
+
+        super().initial(request, *args, **kwargs)
 
 
 class SurveyViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows surveys to be viewed or edited.
     """
-    queryset = Survey.objects.all()
     serializer_class = SurveySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsSurveyOwner | ReadOnlyWhenSurveyActive]
+
+    def get_queryset(self):
+        if self.action == 'list':
+            now = timezone.now()
+            return Survey.objects.filter(
+                # either user is the owner
+                Q(owner=self.request.user.id) |
+                # or the survey is active
+                (
+                    Q(active=True)
+                    & (Q(start_date_time=None) | Q(start_date_time__lte=now))
+                    & (Q(end_date_time=None) | Q(start_date_time__gte=now))
+                )
+            )
+        return Survey.objects.all()
 
 
 class SurveyQuestionViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows survey questions to be viewed or edited.
     """
-    queryset = SurveyQuestion.objects.all().prefetch_related('choices')
+    queryset = SurveyQuestion.objects\
+        .select_related('survey')\
+        .all()\
+        .prefetch_related('choices')
     serializer_class = SurveyQuestionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsParentSurveyOwner | ReadOnlyWhenParentSurveyActive]
+
+    def get_queryset(self):
+
+        query_set = SurveyQuestion.objects.select_related('survey')
+
+        if self.action == 'list':
+            now = timezone.now()
+            query_set = query_set.filter(
+                # either user is the owner
+                Q(survey__owner=self.request.user.id) |
+                # or the survey is active
+                (
+                    Q(survey__active=True)
+                    & (Q(survey__start_date_time=None) | Q(survey__start_date_time__lte=now))
+                    & (Q(survey__end_date_time=None) | Q(survey__start_date_time__gte=now))
+                )
+            )
+        else:
+            query_set = query_set.all()
+
+        return query_set.prefetch_related('choices')
 
 
-class NestedSurveyQuestionViewSet(viewsets.ModelViewSet):
+class NestedSurveyQuestionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
     """
     API endpoint that allows questions of a particular survey to be viewed or edited.
     """
     serializer_class = NestedSurveyQuestionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsParentSurveyOwner | ReadOnlyWhenParentSurveyActive]
+
+    # NestedViewMixIn will set
+    # self.parent_instance = Survey.objects.get(pk=self.kwargs['survey_pk'])
+    # before .get, .post, etc. are called.
+    parent_model_queryset = Survey.objects.all()
+    parent_pk_name = 'survey_pk'
 
     @handle_invalid_hashid('Survey')
     def get_queryset(self):
-        return SurveyQuestion.objects.filter(survey=self.kwargs['survey_pk']).prefetch_related('choices')
+        return SurveyQuestion.objects\
+            .select_related('survey')\
+            .filter(survey=self.kwargs['survey_pk'])\
+            .prefetch_related('choices')
 
 
 class SurveySubmissionViewSet(mixins.CreateModelMixin,
@@ -49,15 +138,35 @@ class SurveySubmissionViewSet(mixins.CreateModelMixin,
     API endpoint that allows survey submissions to be created or viewed.
     Editing a submission is not supported.
     """
-    queryset = SurveySubmission.objects.all().prefetch_related('responses')
     serializer_class = SurveySubmissionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [
+        IsParentSurveyOwner | CreateOnlyWhenParentSurveyActive
+    ]
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    def get_queryset(self):
+
+        query_set = SurveySubmission.objects.select_related('survey')
+
+        if self.action == 'list':
+            now = timezone.now()
+            query_set = query_set.filter(
+                # either user is the owner
+                Q(survey__owner=self.request.user.id) |
+                # or the survey is active
+                (
+                    Q(survey__active=True)
+                    & (Q(survey__start_date_time=None) | Q(survey__start_date_time__lte=now))
+                    & (Q(survey__end_date_time=None) | Q(survey__start_date_time__gte=now))
+                )
+            )
+        else:
+            query_set = query_set.all()
+
+        return query_set.prefetch_related('responses')
 
 
-class NestedSurveySubmissionViewSet(mixins.CreateModelMixin,
+class NestedSurveySubmissionViewSet(NestedViewMixIn,
+                                    mixins.CreateModelMixin,
                                     mixins.RetrieveModelMixin,
                                     mixins.DestroyModelMixin,
                                     mixins.ListModelMixin,
@@ -67,8 +176,19 @@ class NestedSurveySubmissionViewSet(mixins.CreateModelMixin,
     Editing a submission is not supported.
     """
     serializer_class = NestedSurveySubmissionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [
+        IsParentSurveyOwner | CreateOnlyWhenParentSurveyActive
+    ]
+
+    # NestedViewMixIn will set
+    # self.parent_instance = Survey.objects.get(pk=self.kwargs['survey_pk'])
+    # before .get, .post, etc. are called.
+    parent_model_queryset = Survey.objects.all()
+    parent_pk_name = 'survey_pk'
 
     @handle_invalid_hashid('Survey')
     def get_queryset(self):
-        return SurveySubmission.objects.filter(survey=self.kwargs['survey_pk']).prefetch_related('responses')
+        return SurveySubmission.objects\
+            .select_related('survey')\
+            .filter(survey=self.kwargs['survey_pk'])\
+            .prefetch_related('responses')

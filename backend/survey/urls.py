@@ -10,9 +10,21 @@ from .views import (
 from rest_framework_nested import routers
 
 router = routers.DefaultRouter()
-router.register(r'surveys', SurveyViewSet)
-router.register(r'questions', SurveyQuestionViewSet)
-router.register(r'submissions', SurveySubmissionViewSet)
+router.register(
+    r'surveys',
+    SurveyViewSet,
+    basename='survey'
+)
+router.register(
+    r'questions',
+    SurveyQuestionViewSet,
+    basename='questions'
+)
+router.register(
+    r'submissions',
+    SurveySubmissionViewSet,
+    basename='submissions'
+)
 
 questions_router = routers.NestedSimpleRouter(
     router,
