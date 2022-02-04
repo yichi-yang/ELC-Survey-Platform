@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from hashid_field import HashidAutoField
 from django.utils import timezone
 from .utils import build_auto_salt
-
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 class Survey(models.Model):
 
@@ -133,3 +133,7 @@ class SurveyResponse(models.Model):
 
     def __str__(self):
         return f'SurveyResponse submission={self.submission.id} question={self.question.id}'
+
+class SurveyCode(models.Model):
+    id = models.PositiveIntegerField(primary_key=True, validators=[MinValueValidator(1000), MaxValueValidator(9999)])
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE)

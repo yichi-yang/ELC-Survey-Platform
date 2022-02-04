@@ -2,13 +2,15 @@ from django.db.models import Q, QuerySet
 from django.utils import timezone
 from rest_framework import viewsets, mixins
 from rest_framework.generics import get_object_or_404
-from .models import Survey, SurveyQuestion, SurveySubmission
+from .models import Survey, SurveyQuestion, SurveySubmission, SurveyCode
 from .serializers import (
+    SurveyCodeSerializer,
     SurveySerializer,
     SurveyQuestionSerializer,
     NestedSurveyQuestionSerializer,
     SurveySubmissionSerializer,
-    NestedSurveySubmissionSerializer
+    NestedSurveySubmissionSerializer,
+    SurveyCodeSerializer
 )
 from .utils import handle_invalid_hashid
 from .permissions import (
@@ -192,3 +194,14 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
             .select_related('survey')\
             .filter(survey=self.kwargs['survey_pk'])\
             .prefetch_related('responses')
+
+class SurveyCodeViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that returns all mappings of 4 digit codes to survey ID
+    or a particular survey ID from a 4 digit code
+    """
+    serializer_class = SurveyCodeSerializer
+    # permission_classes = [ReadOnlyWhenSurveyActive]
+
+    def get_queryset(self):
+        return SurveyCode.objects.all()
