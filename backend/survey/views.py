@@ -55,6 +55,33 @@ class NestedViewMixIn:
 class SurveyViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows surveys to be viewed or edited.
+
+    ## Field Description
+
+    - **id:** The survey's unique id. [*readonly*]
+    - **title:** The survey's title.
+    - **description:** The survey's description. [*optional*]
+    - **created_at:** The survey's creation time. [*readonly*]
+    - **active:** Whether the survey is active. Only when a survey is active
+        people other than the owner can view and submit responses to the survey.
+    - **start_date_time:** If set to a value other than `null`, other people
+        can only view and submit responses to the survey after the
+        specified time. [*optional*]
+    - **end_date_time:** Similar to `start_date_time`, but controls the date
+        time when the survey ends. [*optional*]
+
+    ## Examples
+
+    To create a survey, `POST` the following to `/api/surveys/`:  
+
+    ``` json
+        {  
+            "title": "Survey Name",  
+            "description": "A very interesting survey",  
+            "active": false  
+        }
+    ```
+
     """
     serializer_class = SurveySerializer
     permission_classes = [IsSurveyOwner | ReadOnlyWhenSurveyActive]

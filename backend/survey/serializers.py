@@ -5,41 +5,6 @@ from .models import Survey, SurveyQuestion, SurveyQuestionChoice, SurveyResponse
 from .validators import OwnedByRequestUser
 
 
-class ContextPKRelatedDefault:
-    """
-    May be applied as a `default=...` value on a serializer field.
-    Returns an object of model_class with pk=get_pk_from_context(context)
-    """
-    requires_context = True
-
-    def __init__(self, model_class, get_pk_from_context):
-        self.model_class = model_class
-        self.get_pk_from_context = get_pk_from_context
-
-    default_error_messages = {
-        'does_not_exist': _('Invalid pk "{pk_value}" - object does not exist.'),
-        'incorrect_type': _('Incorrect type. Expected pk value, received {data_type}.'),
-    }
-
-    def fail(self, key, **kwargs):
-        """
-        A helper method that simply raises a validation error.
-        Modified from Field.fail
-        """
-        msg = self.default_error_messages[key]
-        message_string = msg.format(**kwargs)
-        raise serializers.ValidationError(message_string, code=key)
-
-    def __call__(self, serializer_field):
-        pk = self.get_pk_from_context(serializer_field.context)
-        try:
-            return self.model_class.objects.get(pk=pk)
-        except self.model_class.DoesNotExist:
-            self.fail('does_not_exist', pk_value=pk)
-        except (TypeError, ValueError):
-            self.fail('incorrect_type', data_type=type(pk).__name__)
-
-
 class SerializerContextDefault:
     """
     May be applied as a `default=...` value on a serializer field.
