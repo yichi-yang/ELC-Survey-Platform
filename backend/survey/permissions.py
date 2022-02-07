@@ -62,10 +62,10 @@ class IsParentSurveyOwner(BasePermission):
 #         return obj.survey.owner == request.user
 
 
-class ReadOnlyWhenParentSurveyActive(ReadOnlyWhenSurveyActive):
+class ReadOnlyWhenParentSurveyActive(BasePermission):
 
-    def has_object_permission(self, request, view, obj):
-        return super().has_object_permission(request, view, obj.survey)
+    def has_permission(self, request, view):
+        return request.method in SAFE_METHODS and view.parent_instance.is_active
 
 
 class CreateOnlyWhenParentSurveyActive(BasePermission):
