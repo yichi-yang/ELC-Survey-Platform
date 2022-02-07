@@ -47,25 +47,10 @@ class IsParentSurveyOwner(BasePermission):
         return obj.survey.owner == request.user
 
 
-# class IsParentSurveyOwner(BasePermission):
-#     """
-#     Only the owner of obj.survey can edit. Any authenticated users can create
-#     object (creation permission should be enforced by validators).
-#     """
+class ReadOnlyWhenParentSurveyActive(BasePermission):
 
-#     def has_permission(self, request, view):
-#         if issubclass(view, views.NestedViewMixIn):
-#             return view.parent_instance.owner == request.user
-#         return request.user.is_authenticated
-
-#     def has_object_permission(self, request, view, obj):
-#         return obj.survey.owner == request.user
-
-
-class ReadOnlyWhenParentSurveyActive(ReadOnlyWhenSurveyActive):
-
-    def has_object_permission(self, request, view, obj):
-        return super().has_object_permission(request, view, obj.survey)
+    def has_permission(self, request, view):
+        return request.method in SAFE_METHODS and view.parent_instance.is_active
 
 
 class CreateOnlyWhenParentSurveyActive(BasePermission):

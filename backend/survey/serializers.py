@@ -5,41 +5,6 @@ from .models import Survey, SurveyQuestion, SurveyQuestionChoice, SurveyResponse
 from .validators import OwnedByRequestUser
 
 
-class ContextPKRelatedDefault:
-    """
-    May be applied as a `default=...` value on a serializer field.
-    Returns an object of model_class with pk=get_pk_from_context(context)
-    """
-    requires_context = True
-
-    def __init__(self, model_class, get_pk_from_context):
-        self.model_class = model_class
-        self.get_pk_from_context = get_pk_from_context
-
-    default_error_messages = {
-        'does_not_exist': _('Invalid pk "{pk_value}" - object does not exist.'),
-        'incorrect_type': _('Incorrect type. Expected pk value, received {data_type}.'),
-    }
-
-    def fail(self, key, **kwargs):
-        """
-        A helper method that simply raises a validation error.
-        Modified from Field.fail
-        """
-        msg = self.default_error_messages[key]
-        message_string = msg.format(**kwargs)
-        raise serializers.ValidationError(message_string, code=key)
-
-    def __call__(self, serializer_field):
-        pk = self.get_pk_from_context(serializer_field.context)
-        try:
-            return self.model_class.objects.get(pk=pk)
-        except self.model_class.DoesNotExist:
-            self.fail('does_not_exist', pk_value=pk)
-        except (TypeError, ValueError):
-            self.fail('incorrect_type', data_type=type(pk).__name__)
-
-
 class SerializerContextDefault:
     """
     May be applied as a `default=...` value on a serializer field.
@@ -68,9 +33,9 @@ class SurveySerializer(serializers.ModelSerializer):
 
 
 class NestedSurveyQuestionChoiceSerializer(serializers.ModelSerializer):
+    # can't be readonly because we need the id for updating choices
     id = HashidSerializerCharField(
-        source_field='survey.Survey.id',
-        read_only=True
+        source_field='survey.SurveyQuestionChoice.id', required=False
     )
 
     class Meta:
@@ -132,7 +97,7 @@ class NestedSurveyQuestionSerializer(serializers.ModelSerializer):
                     {field: f'{field!r} is redundant for question type {question_type!r}'}
                 )
 
-        if 'range_min' in data:
+        if data.get("range_min", None) is not None:
             if not (data['range_min'] <= data['range_max']):
                 raise serializers.ValidationError(
                     {
@@ -161,8 +126,11 @@ class NestedSurveyQuestionSerializer(serializers.ModelSerializer):
         choices = validated_data.pop('choices', [])
         question = super().create(validated_data)
         for choice_data in choices:
+            # remove the id if exists - id will be auto created
+            choice_data.pop('id', None)
             SurveyQuestionChoice.objects.create(
-                question=question, **choice_data)
+                question=question, **choice_data
+            )
         return question
 
     def update(self, instance, validated_data):
@@ -170,7 +138,7 @@ class NestedSurveyQuestionSerializer(serializers.ModelSerializer):
         Update the SurveyQuestion and its SurveyQuestionChoices.
         """
 
-        choices = validated_data.pop('choices')
+        choices = validated_data.pop('choices', [])
 
         # If a choice already has an id, we will update it with the new values.
         # We should create new choices for those in the list that have no id.
