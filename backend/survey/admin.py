@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (Survey, SurveyQuestion, SurveyQuestionChoice,
-                     SurveySubmission, SurveyResponse)
+                     SurveySubmission, SurveyResponse, SurveyCode)
 
 # Register your models here.
 
@@ -28,3 +28,7 @@ class SurveySubmissionAdmin(admin.ModelAdmin):
 @admin.register(SurveyResponse)
 class SurveyResponseAdmin(admin.ModelAdmin):
     readonly_fields = ('id', )
+
+@admin.register(SurveyCode)
+class SurveyCodeAdmin(admin.ModelAdmin):
+    pass
