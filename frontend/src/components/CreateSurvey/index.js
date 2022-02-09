@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import QuestionCreate from './QuestionCreate';
-import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormHelperText from '@mui/material/FormHelperText';
 import FormControl from '@mui/material/FormControl';

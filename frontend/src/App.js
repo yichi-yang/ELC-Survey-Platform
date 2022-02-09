@@ -5,7 +5,6 @@ import StudentLogIn from './components/StudentLogIn';
 import AdminLogIn from './components/AdminLogIn';
 import AdminTemplate from './components/AdminTemplate';
 import CreateSurvey from './components/CreateSurvey';
-import AdminTemplate from './components/AdminTemplate';
 
 function App() {
   return (
