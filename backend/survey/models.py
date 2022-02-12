@@ -7,6 +7,7 @@ from .utils import build_auto_salt
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+import random
 
 class Survey(models.Model):
 
@@ -46,7 +47,13 @@ class Survey(models.Model):
 def update_stock(sender, instance, **kwargs):
     if instance.active != instance.prev_active:
         if instance.active:
-            mapping = SurveyCode(survey = instance)
+            # get random 4 digit code
+            # query table to see if id exists
+            # stop loop until row found
+            code = random.randint(1000,9999)
+            while SurveyCode.objects.filter(id=code).exists():
+                code = random.randint(1000,9999)
+            mapping = SurveyCode(id=code, survey=instance)
             mapping.save()
         else:
             SurveyCode.objects.filter(survey=instance.id).delete()
@@ -153,5 +160,5 @@ class SurveyResponse(models.Model):
         return f'SurveyResponse submission={self.submission.id} question={self.question.id}'
 
 class SurveyCode(models.Model):
-    id = models.AutoField(primary_key=True, validators=[MinValueValidator(1000), MaxValueValidator(9999)])
+    id = models.PositiveIntegerField(primary_key=True, validators=[MinValueValidator(1000), MaxValueValidator(9999)])
     survey = models.ForeignKey(Survey, on_delete=models.CASCADE)

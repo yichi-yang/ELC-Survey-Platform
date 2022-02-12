@@ -2,6 +2,7 @@ from django.db.models import Q, QuerySet
 from django.utils import timezone
 from rest_framework import viewsets, mixins, generics
 from rest_framework.generics import get_object_or_404
+from rest_framework.permissions import AllowAny
 from .models import Survey, SurveyQuestion, SurveySubmission, SurveyCode
 from .serializers import (
     SurveyCodeSerializer,
@@ -222,26 +223,23 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
             .filter(survey=self.kwargs['survey_pk'])\
             .prefetch_related('responses')
 
-class CodeToSurveyViewSet(viewsets.ModelViewSet):
+class CodeToSurveyViewSet(generics.RetrieveAPIView):
     """
     API endpoint that returns all mappings of 4 digit codes to survey ID
     or a particular survey ID from a 4 digit code
     """
     serializer_class = SurveyCodeSerializer
-    # permission_classes = [ReadOnlyWhenSurveyActive]
-
-    def get_queryset(self):
-        return SurveyCode.objects.all()
+    permission_classes = [AllowAny]
+    queryset = SurveyCode.objects.all()
 
 # turn into generics.ListCreateAPIView
-class SurveyToCodeViewSet(viewsets.ModelViewSet):
+class SurveyToCodeViewSet(generics.RetrieveAPIView):
     """
     API endpoint that returns all mappings of 4 digit codes to survey ID
     or a particular 4 digit code from a survey ID
     """
     serializer_class = SurveyCodeSerializer
     lookup_field ='survey'
-    # permission_classes = [ReadOnlyWhenSurveyActive]
+    permission_classes = [AllowAny]
+    queryset = SurveyCode.objects.all()
 
-    def get_queryset(self):
-        return SurveyCode.objects.all()
