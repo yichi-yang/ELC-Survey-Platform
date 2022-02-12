@@ -7,6 +7,8 @@ import FormLabel from '@mui/material/FormLabel';
 import RadioGroup from '@mui/material/RadioGroup';
 import Radio from '@mui/material/Radio';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import Button from '@material-ui/core/Button';
+import TextField from '@mui/material/TextField';
 import { Text } from "react-native";
 import { useState } from 'react';
 
@@ -35,6 +37,15 @@ export default function SurveyPage(){
         alighItems: 'center'
     }
 
+    const buttonStyle = {
+        backgroundColor:'#FFC72C', 
+        boxShadow:'none',
+        color: 'white',
+        fontWeight: 'bold',
+        width:'100%',
+        height: '8vh',
+    }
+
     /* Adjust for iPhone minWidth 360 */
     const content = {
         display: 'flex',
@@ -45,7 +56,7 @@ export default function SurveyPage(){
         minWidth: 360,
         flexWrap: 'wrap'
     }
-    const questionComponent = {
+    const questionField = {
         margin: '3vw',
         justifyContent: 'flex-start',
         width: '50%'
@@ -65,7 +76,8 @@ export default function SurveyPage(){
                 </Text>
             </div>
             <div style={content}>
-                <FormControl style={questionComponent}>
+                <FormControl style={questionField}>
+                    {/* Room number selection */}
                     <InputLabel id="demo-simple-select-label">Room Number</InputLabel>
                     <Select
                         labelId="demo-simple-select-label"
@@ -81,10 +93,9 @@ export default function SurveyPage(){
                         <MenuItem value={'E'}>E</MenuItem>
                         <MenuItem value={'F'}>F</MenuItem>
                     </Select>
-                </FormControl>
 
-                {/* @yiwenwang Need to figure out how to dynamically generate useState hook */}
-                <FormControl style={questionComponent}>
+                    {/* Radio group selection */}
+                    {/* @yiwenwang Need to figure out how to dynamically generate useState hook */}
                     <FormLabel id="demo-radio-buttons-group-label">Question 1</FormLabel>
                     <RadioGroup
                         aria-labelledby="demo-radio-buttons-group-label"
@@ -95,6 +106,9 @@ export default function SurveyPage(){
                         <FormControlLabel value="male" control={<Radio />} label="Male" />
                         <FormControlLabel value="other" control={<Radio />} label="Other" />
                     </RadioGroup>
+
+                    {/* Text field */}
+                    <TextField id="standard-basic" label="Standard" variant="standard" />
                 </FormControl>
             </div>
         </div>

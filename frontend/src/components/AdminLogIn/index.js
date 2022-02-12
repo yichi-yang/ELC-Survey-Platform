@@ -35,7 +35,7 @@ export default function AdminLogIn(){
       
     {/* TODO: @shuyaoxie add href to admin homepage */}
       <Button variant='contained' 
-          style={buttonStyle}>
+          style={buttonStyle} href="template">
             Login
       </Button>
     </div> 

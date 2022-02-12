@@ -1,14 +1,16 @@
 from django.db.models import Q, QuerySet
 from django.utils import timezone
-from rest_framework import viewsets, mixins
+from rest_framework import viewsets, mixins, generics
 from rest_framework.generics import get_object_or_404
-from .models import Survey, SurveyQuestion, SurveySubmission
+from .models import Survey, SurveyQuestion, SurveySubmission, SurveyCode
 from .serializers import (
+    SurveyCodeSerializer,
     SurveySerializer,
     SurveyQuestionSerializer,
     NestedSurveyQuestionSerializer,
     SurveySubmissionSerializer,
-    NestedSurveySubmissionSerializer
+    NestedSurveySubmissionSerializer,
+    SurveyCodeSerializer
 )
 from .utils import handle_invalid_hashid
 from .permissions import (
@@ -55,6 +57,33 @@ class NestedViewMixIn:
 class SurveyViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows surveys to be viewed or edited.
+
+    ## Field Description
+
+    - **id:** The survey's unique id. [*readonly*]
+    - **title:** The survey's title.
+    - **description:** The survey's description. [*optional*]
+    - **created_at:** The survey's creation time. [*readonly*]
+    - **active:** Whether the survey is active. Only when a survey is active
+        people other than the owner can view and submit responses to the survey.
+    - **start_date_time:** If set to a value other than `null`, other people
+        can only view and submit responses to the survey after the
+        specified time. [*optional*]
+    - **end_date_time:** Similar to `start_date_time`, but controls the date
+        time when the survey ends. [*optional*]
+
+    ## Examples
+
+    To create a survey, `POST` the following to `/api/surveys/`:  
+
+    ``` json
+        {  
+            "title": "Survey Name",  
+            "description": "A very interesting survey",  
+            "active": false  
+        }
+    ```
+
     """
     serializer_class = SurveySerializer
     permission_classes = [IsSurveyOwner | ReadOnlyWhenSurveyActive]
@@ -192,3 +221,27 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
             .select_related('survey')\
             .filter(survey=self.kwargs['survey_pk'])\
             .prefetch_related('responses')
+
+class CodeToSurveyViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that returns all mappings of 4 digit codes to survey ID
+    or a particular survey ID from a 4 digit code
+    """
+    serializer_class = SurveyCodeSerializer
+    # permission_classes = [ReadOnlyWhenSurveyActive]
+
+    def get_queryset(self):
+        return SurveyCode.objects.all()
+
+# turn into generics.ListCreateAPIView
+class SurveyToCodeViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that returns all mappings of 4 digit codes to survey ID
+    or a particular 4 digit code from a survey ID
+    """
+    serializer_class = SurveyCodeSerializer
+    lookup_field ='survey'
+    # permission_classes = [ReadOnlyWhenSurveyActive]
+
+    def get_queryset(self):
+        return SurveyCode.objects.all()
