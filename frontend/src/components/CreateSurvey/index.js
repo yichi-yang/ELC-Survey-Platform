@@ -63,6 +63,15 @@ export default function CreateSurvey(props) {
     marginTop: '5vh',
   };
 
+  const underLineInput = {
+    minHeight: '10px',
+    marginLeft: '1vw',
+    width: '15%',
+    border: 'none',
+    borderBottom: 'solid 1px #C4C4C4',
+    fontWeight: 'bold',
+  };
+
   const [shouldRender, setUpdate] = useState(false);
 
   const types = ['Multiple Choice', 'Selection', 'Short Answer'];
@@ -79,11 +88,13 @@ export default function CreateSurvey(props) {
 
   const [required, setRequired] = useState(false);
 
-  // const [groupNum, setGroupNum] = useState(1);
+  const [groupNum, setGroupNum] = useState(1);
 
-  // const [grouped, setGrouped] = useState(false);
+  const [groupName, setGroupName] = useState('Groups');
 
-  // const [letterGroup, setLetterGroup] = useState(false);
+  const [grouped, setGrouped] = useState(false);
+
+  const [letterGroup, setLetterGroup] = useState(false);
 
   const iconButtonStyle = {
     margin: '0 0.5vw',
@@ -125,7 +136,9 @@ export default function CreateSurvey(props) {
               ) : (
                 <CircleOutlinedIcon fontSize="1vw" />
               )}
-              {q}
+                <span style={{ padding: '0.5vw', fontSize: '1vw' }}>
+                        {q}
+                </span>
             </div>
           );
         })}
@@ -285,11 +298,13 @@ export default function CreateSurvey(props) {
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 style={{
-                  minHeight: '30px',
+                  minHeight: '20px',
                   width: '50%',
-                  margin: '2vw',
+                  margin: '0.5vw',
                   border: 'none',
                   borderBottom: 'solid 1px #C4C4C4',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
                 }}
               />
 
@@ -298,6 +313,7 @@ export default function CreateSurvey(props) {
                   defaultValue={0}
                   onChange={typeChange}
                   inputProps={{ 'aria-label': 'Without label' }}
+                  style={{ height: '3vw' }}
                 >
                   <MenuItem value={0}>Multiple Choice</MenuItem>
                   <MenuItem value={1}>Selection</MenuItem>
@@ -317,12 +333,21 @@ export default function CreateSurvey(props) {
                       ) : (
                         <CircleOutlinedIcon fontSize="1vw" />
                       )}
-                      {q}
+                      <span style={{ padding: '0.8vw', fontSize: '1vw' }}>
+                        {q}
+                      </span>
                     </div>
                   );
                 })}
 
-                <div style={{ margin: '5px', fontSize: '1.2vw' }}>
+                <div
+                  style={{
+                    margin: '5px',
+                    fontSize: '1.2vw',
+                    content: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
                   {questionType ? (
                     <SquareIcon fontSize="1vw" />
                   ) : (
@@ -342,6 +367,9 @@ export default function CreateSurvey(props) {
                       width: '50%',
                       border: 'none',
                       borderBottom: 'solid 1px #C4C4C4',
+                      fontWeight: 'bold',
+                      margin: '0.5vw 0 0 0.5vw',
+                      paddingLeft:'0.5vw'
                     }}
                   />
                 </div>
@@ -425,38 +453,65 @@ export default function CreateSurvey(props) {
           <div></div>
         )}
 
-        {/* <div>
-          <strong style={{color:'#990000'}}>Divide By</strong>  */}
-        {/*           
+        <div
+          style={{
+            margin: '3vw 1vw 0vw 3vw',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'left',
+            alignItems:'center',
+          }}
+        >
+          <strong style={{ color: '#990000' }}>Divide By</strong>
           <input
-                type="text"
-                value={groupNum}
-                onChange={(e) => {
-                  setGroupNum(e.target.value);
-                }}
-                style={{
-                  minHeight: '30px',
-                  width: '5%',
-                  margin: '2vw',
-                  border: 'none',
-                  borderBottom: 'solid 1px #C4C4C4',
-                }}
-              />
+            type="text"
+            value={groupNum}
+            onChange={(e) => {
+              setGroupNum(e.target.value);
+            }}
+            style={{
+              minHeight: '10px',
+              width: '5%',
+              marginLeft: '1vw',
+              border: 'none',
+              borderBottom: 'solid 1px #C4C4C4',
+              color: '#C4C4C4',
+              fontWeight: 'bold',
+              textAlign: 'center',
+            }}
+          />
 
-<input
-                type="text"
-                value={}
-                onChange={(e) => {
-                  setGroupNum(e.target.value);
-                }}
-                style={{
-                  minHeight: '30px',
-                  margin: '2vw',
-                  border: 'none',
-                  borderBottom: 'solid 1px #C4C4C4',
-                }}
-              /> */}
-        {/* </div> */}
+          <input
+            type="text"
+            value={groupName}
+            onChange={(e) => {
+              setGroupName(e.target.value);
+            }}
+            style={{
+              minHeight: '10px',
+              marginLeft: '1vw',
+              width: '15%',
+              border: 'none',
+              borderBottom: 'solid 1px #C4C4C4',
+              color: '#C4C4C4',
+              fontWeight: 'bold',
+              textAlign: 'center',
+            }}
+          />
+          <Switch
+            checked={grouped}
+            onChange={() => {
+              setGrouped(!grouped);
+            }}
+          />
+          <strong style={{ color: '#C4C4C4' }}> in alphabet</strong>
+          <Switch
+            checked={letterGroup}
+            onChange={() => {
+              setLetterGroup(!letterGroup);
+            }}
+          />
+        </div>
 
         <Button
           id="addQuestion"
