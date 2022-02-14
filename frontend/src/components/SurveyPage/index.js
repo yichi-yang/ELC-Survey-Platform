@@ -9,42 +9,34 @@ import Radio from '@mui/material/Radio';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Button from '@material-ui/core/Button';
 import TextField from '@mui/material/TextField';
-import { Text } from "react-native";
+import FormGroup from '@mui/material/FormGroup';
+import Checkbox from '@mui/material/Checkbox';
 import { useState } from 'react';
 
 export default function SurveyPage(){
 
     const bodyStyle = {
-            display: 'flex',
-            backgroundColor: '#D1D1D1',
-            alighItems: 'center',
-            justifyContent: 'center',
-            flexWrap: 'wrap'
-    }
-
-    const headlineStyle = {
         display: 'flex',
-        backgroundColor: '#990000',
+        backgroundColor: '#D1D1D1',
         alighItems: 'center',
         justifyContent: 'center',
-        width: '100%',
-        height: 80
+        flexWrap: 'wrap',
     }
 
-    const textStyle = {
-        fontSize: 28,
+    const headingStyle = {
+        height: '15vh',
+        width: '100vw',
         color: 'white',
-        alighItems: 'center'
-    }
-
-    const buttonStyle = {
-        backgroundColor:'#FFC72C', 
-        boxShadow:'none',
-        color: 'white',
-        fontWeight: 'bold',
-        width:'100%',
-        height: '8vh',
-    }
+        backgroundColor: '#990000',
+        margin: '0',
+        padding: '0',
+        fontSize: '1.6em',
+        textAlign: 'center',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        top: '0',
+      };
 
     /* Adjust for iPhone minWidth 360 */
     const content = {
@@ -54,29 +46,48 @@ export default function SurveyPage(){
         justifyContent: 'flex-start',
         width: '60%',
         minWidth: 360,
-        flexWrap: 'wrap'
+        flexDirection: 'column'
     }
-    const questionField = {
+
+    const questionMargin = {
+        flexDirection: 'column',
         margin: '3vw',
-        justifyContent: 'flex-start',
-        width: '50%'
     }
+
+    const submitButton = {
+        backgroundColor: '#FFC72C',
+        width: '100%',
+        textAlign: 'center',
+        color: 'white',
+        marginTop: '5vh',
+      };
 
     const [room, setRoom] = useState('');
     const handleRoomChange = (event) => {
         setRoom(event.target.value);
       };
+    const [checked, setCheck] = useState({
+        option_1: false,
+        option_2: false,
+        option_3: false,
+    });
+    const handleCheckChange = (event) => {
+        setCheck({
+            ...checked,
+            [event.target.name]: event.target.checked,
+        });
+    };
+    const { op1, op2, op3 } = checked;
 
     return(
     
         <div style={bodyStyle}>
-            <div style={headlineStyle}>
-                <Text style={textStyle}>
-                    Survey A
-                </Text>
+            <div style={headingStyle}>
+                Survey A
             </div>
             <div style={content}>
-                <FormControl style={questionField}>
+            <div style={questionMargin}>
+                <FormControl style={{width: '40%'}}>
                     {/* Room number selection */}
                     <InputLabel id="demo-simple-select-label">Room Number</InputLabel>
                     <Select
@@ -93,9 +104,13 @@ export default function SurveyPage(){
                         <MenuItem value={'E'}>E</MenuItem>
                         <MenuItem value={'F'}>F</MenuItem>
                     </Select>
+                </FormControl>
+            </div>
+                {/* Radio group selection */}
+                {/* @yiwenwang Need to figure out how to dynamically generate useState hook */}
 
-                    {/* Radio group selection */}
-                    {/* @yiwenwang Need to figure out how to dynamically generate useState hook */}
+                <div style={questionMargin}>
+                <FormControl>
                     <FormLabel id="demo-radio-buttons-group-label">Question 1</FormLabel>
                     <RadioGroup
                         aria-labelledby="demo-radio-buttons-group-label"
@@ -106,13 +121,48 @@ export default function SurveyPage(){
                         <FormControlLabel value="male" control={<Radio />} label="Male" />
                         <FormControlLabel value="other" control={<Radio />} label="Other" />
                     </RadioGroup>
-
-                    {/* Text field */}
-                    <TextField id="standard-basic" label="Standard" variant="standard" />
                 </FormControl>
+                </div>
+
+
+                {/* Text field */}
+                <div style={questionMargin}>
+                    <div>Question 2</div>
+                    <TextField id="standard-basic" label="Type here..." variant="standard" 
+                    style={{width: '70%'}}/>
+                </div>
+
+                {/* Check box */}
+                <div style={questionMargin}>
+                    <div>Question 3</div>
+                    <FormControl sx={{ m: 3 }} component="fieldset" variant="standard">
+                        <FormLabel component="legend">You may select more than one options</FormLabel>
+                        <FormGroup>
+                        <FormControlLabel
+                            control={
+                            <Checkbox checked={op1} onChange={handleCheckChange} name="option_1" />
+                            }
+                            label="Option1"
+                        />
+                        <FormControlLabel
+                            control={
+                            <Checkbox checked={op2} onChange={handleCheckChange} name="option_2" />
+                            }
+                            label="Option2"
+                        />
+                        <FormControlLabel
+                            control={
+                            <Checkbox checked={op3} onChange={handleCheckChange} name="option_3" />
+                            }
+                            label="Option3"
+                        />
+                        </FormGroup>
+                    </FormControl>
+                </div>
+                <Button id="addQuestion" style={submitButton} onClick={() => {}}>
+                    <strong>Submit</strong>
+                </Button>     
             </div>
-        </div>
-        
-        
+        </div>     
     );
 };
