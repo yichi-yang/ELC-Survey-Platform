@@ -301,10 +301,6 @@ const SurveyBar = (props) => {
   }
 
 
-
-  
-
-
 export default function AdminTemplate(){
   return(
     <Grid container rowSpacing={2}>
@@ -360,3 +356,5 @@ export default function AdminTemplate(){
     </Grid>
   );
 };
+
+export {AdminTemplate, ResponsiveAppBar};

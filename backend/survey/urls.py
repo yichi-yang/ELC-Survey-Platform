@@ -27,16 +27,6 @@ router.register(
     SurveySubmissionViewSet,
     basename='submissions'
 )
-router.register(
-    r'mapping/codes',
-    CodeToSurveyViewSet,
-    basename='codemap'
-)
-router.register(
-    r'mapping/surveys',
-    SurveyToCodeViewSet,
-    basename='surveymap'
-)
 questions_router = routers.NestedSimpleRouter(
     router,
     r'surveys',
@@ -64,4 +54,6 @@ urlpatterns = [
     path(r'', include(router.urls)),
     path(r'', include(questions_router.urls)),
     path(r'', include(submissions_router.urls)),
+    path(r'mapping/codes/<int:pk>', CodeToSurveyViewSet.as_view(), name="codes"),
+    path(r'mapping/surveys/<int:pk>', SurveyToCodeViewSet.as_view(), name="surveys"),
 ]

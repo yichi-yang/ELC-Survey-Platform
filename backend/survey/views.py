@@ -2,6 +2,7 @@ from django.db.models import Q, QuerySet
 from django.utils import timezone
 from rest_framework import viewsets, mixins, generics
 from rest_framework.generics import get_object_or_404
+from rest_framework.permissions import AllowAny
 from .models import Survey, SurveyQuestion, SurveySubmission, SurveyCode
 from .serializers import (
     SurveyCodeSerializer,
@@ -58,32 +59,127 @@ class SurveyViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows surveys to be viewed or edited.
 
-    ## Field Description
+    # Field Description
 
-    - **id:** The survey's unique id. [*readonly*]
-    - **title:** The survey's title.
-    - **description:** The survey's description. [*optional*]
-    - **created_at:** The survey's creation time. [*readonly*]
-    - **active:** Whether the survey is active. Only when a survey is active
-        people other than the owner can view and submit responses to the survey.
-    - **start_date_time:** If set to a value other than `null`, other people
-        can only view and submit responses to the survey after the
-        specified time. [*optional*]
-    - **end_date_time:** Similar to `start_date_time`, but controls the date
-        time when the survey ends. [*optional*]
+    | Field             | Type     |          | Description                                                                                                                         |
+    | ----------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+    | `id`              | `string` | readonly | The survey's unique id.                                                                                                             |
+    | `title`           | `string` |          | The survey's title.                                                                                                                 |
+    | `description`     | `string` | optional | The survey's description.                                                                                                           |
+    | `created_at`      | `string` | readonly | The survey's creation time in ISO 8601 format.                                                                                      |
+    | `active`          | `bool`   |          | Whether the survey is active. Only when a survey is active people other than the owner can view and submit responses to the survey. |
+    | `start_date_time` | `string` | optional | If set to a value other than `null`, other people can only view and submit responses to the survey after the specified time.        |
+    | `end_date_time`   | `string` | optional | Similar to `start_date_time`, but controls the date time when the survey ends.                                                      |
 
-    ## Examples
+    # Examples
+
+    ## Create Survey
 
     To create a survey, `POST` the following to `/api/surveys/`:  
 
-    ``` json
-        {  
-            "title": "Survey Name",  
-            "description": "A very interesting survey",  
-            "active": false  
-        }
+    ``` javascript
+    // POST /api/surveys/
+    {  
+        "title": "Survey Name",  
+        "description": "A very interesting survey",  
+        "active": false  
+    }
+
+    // HTTP 201 Created
+    {
+        "id": "x5zMkQe",
+        "title": "Survey Name",
+        "description": "A very interesting survey",
+        "created_at": "2022-02-14T02:01:16.168116Z",
+        "active": false,
+        "start_date_time": null,
+        "end_date_time": null
+    }
     ```
 
+    ## List Surveys
+
+    You can list all surveys created by you plus any currently active surveys. 
+    > Note: filtering by keyword / name is currently not supported (WIP).
+
+    ``` javascript
+    // GET /api/surveys/
+
+    // HTTP 200 OK
+    [
+        {
+            "id": "ZL9AOn3",
+            "title": "My First Survey",
+            "description": "123",
+            "created_at": "2022-02-14T02:00:43.454549Z",
+            "active": false,
+            "start_date_time": null,
+            "end_date_time": null
+        },
+        {
+            "id": "x5zMkQe",
+            "title": "Survey Name",
+            "description": "A very interesting survey",
+            "created_at": "2022-02-14T02:01:16.168116Z",
+            "active": false,
+            "start_date_time": null,
+            "end_date_time": null
+        }
+    ]
+    ```
+
+    ## Fetch Survey
+
+    To fetch a specific survey, `GET /api/surveys/<id>/`.  
+
+    ``` javascript
+    // GET /api/surveys/x5zMkQe/
+
+    // HTTP 200 OK
+    {
+        "id": "x5zMkQe",
+        "title": "Survey Name",
+        "description": "A very interesting survey",
+        "created_at": "2022-02-14T02:01:16.168116Z",
+        "active": false,
+        "start_date_time": null,
+        "end_date_time": null
+    }
+    ```
+
+    ## Edit Survey
+
+    You can use `PATCH` (partial update) and `PUT` (full update) to edit a survey.
+    > Note: readonly fields cannot be changed.  
+
+    ``` javascript
+    // PATCH /api/surveys/x5zMkQe/
+    {
+        "description": "New description"
+    }
+
+    // HTTP 200 OK
+    {
+        "id": "x5zMkQe",
+        "title": "Survey Name",
+        "description": "New description",
+        "created_at": "2022-02-14T02:01:16.168116Z",
+        "active": false,
+        "start_date_time": null,
+        "end_date_time": null
+    }
+    ```
+
+    ## Delete Survey
+
+    To delete a specific survey, `DELETE /api/surveys/<id>/`. 
+    > Note: deleting a survey also removes all associated questions and responses. 
+
+    ``` javascript
+    // DELETE /api/surveys/x5zMkQe/
+
+    // HTTP 204 No Content
+    ```
     """
     serializer_class = SurveySerializer
     permission_classes = [IsSurveyOwner | ReadOnlyWhenSurveyActive]
@@ -222,26 +318,23 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
             .filter(survey=self.kwargs['survey_pk'])\
             .prefetch_related('responses')
 
-class CodeToSurveyViewSet(viewsets.ModelViewSet):
+class CodeToSurveyViewSet(generics.RetrieveAPIView):
     """
     API endpoint that returns all mappings of 4 digit codes to survey ID
     or a particular survey ID from a 4 digit code
     """
     serializer_class = SurveyCodeSerializer
-    # permission_classes = [ReadOnlyWhenSurveyActive]
-
-    def get_queryset(self):
-        return SurveyCode.objects.all()
+    permission_classes = [AllowAny]
+    queryset = SurveyCode.objects.all()
 
 # turn into generics.ListCreateAPIView
-class SurveyToCodeViewSet(viewsets.ModelViewSet):
+class SurveyToCodeViewSet(generics.RetrieveAPIView):
     """
     API endpoint that returns all mappings of 4 digit codes to survey ID
     or a particular 4 digit code from a survey ID
     """
     serializer_class = SurveyCodeSerializer
     lookup_field ='survey'
-    # permission_classes = [ReadOnlyWhenSurveyActive]
+    permission_classes = [AllowAny]
+    queryset = SurveyCode.objects.all()
 
-    def get_queryset(self):
-        return SurveyCode.objects.all()
