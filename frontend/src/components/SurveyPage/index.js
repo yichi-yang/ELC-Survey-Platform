@@ -13,7 +13,7 @@ import FormGroup from '@mui/material/FormGroup';
 import Checkbox from '@mui/material/Checkbox';
 import { useState } from 'react';
 
-export default function SurveyPage(){
+export default function SurveyPage() {
 
     const bodyStyle = {
         display: 'flex',
@@ -36,7 +36,7 @@ export default function SurveyPage(){
         justifyContent: 'center',
         alignItems: 'center',
         top: '0',
-      };
+    };
 
     /* Adjust for iPhone minWidth 360 */
     const content = {
@@ -56,16 +56,19 @@ export default function SurveyPage(){
 
     const submitButton = {
         backgroundColor: '#FFC72C',
-        width: '100%',
         textAlign: 'center',
         color: 'white',
         marginTop: '5vh',
-      };
+        border: 0,
+        height: 40,
+        fontSize: '1em',
+        cursor: 'pointer'
+    };
 
     const [room, setRoom] = useState('');
     const handleRoomChange = (event) => {
         setRoom(event.target.value);
-      };
+    };
     const [checked, setCheck] = useState({
         option_1: false,
         option_2: false,
@@ -79,90 +82,90 @@ export default function SurveyPage(){
     };
     const { op1, op2, op3 } = checked;
 
-    return(
-    
+    return (
         <div style={bodyStyle}>
             <div style={headingStyle}>
-                Survey A
+                <strong>Survey A</strong>
             </div>
             <div style={content}>
-            <div style={questionMargin}>
-                <FormControl style={{width: '40%'}}>
-                    {/* Room number selection */}
-                    <InputLabel id="demo-simple-select-label">Room Number</InputLabel>
-                    <Select
-                        labelId="demo-simple-select-label"
-                        id="demo-simple-select"
-                        value={room}
-                        label="RoomNumber"
-                        onChange={handleRoomChange}
-                    >
-                        <MenuItem value={'A'}>A</MenuItem>
-                        <MenuItem value={'B'}>B</MenuItem>
-                        <MenuItem value={'C'}>C</MenuItem>
-                        <MenuItem value={'D'}>D</MenuItem>
-                        <MenuItem value={'E'}>E</MenuItem>
-                        <MenuItem value={'F'}>F</MenuItem>
-                    </Select>
-                </FormControl>
-            </div>
+                <div style={questionMargin}>
+                    <FormControl style={{ width: '40%' }}>
+                        {/* Room number selection */}
+                        <InputLabel id="demo-simple-select-label">Room Number</InputLabel>
+                        <Select
+                            labelId="demo-simple-select-label"
+                            id="demo-simple-select"
+                            value={room}
+                            label="RoomNumber"
+                            onChange={handleRoomChange}
+                        >
+                            <MenuItem value={'A'}>A</MenuItem>
+                            <MenuItem value={'B'}>B</MenuItem>
+                            <MenuItem value={'C'}>C</MenuItem>
+                            <MenuItem value={'D'}>D</MenuItem>
+                            <MenuItem value={'E'}>E</MenuItem>
+                            <MenuItem value={'F'}>F</MenuItem>
+                        </Select>
+                    </FormControl>
+                </div>
                 {/* Radio group selection */}
                 {/* @yiwenwang Need to figure out how to dynamically generate useState hook */}
 
                 <div style={questionMargin}>
-                <FormControl>
-                    <FormLabel id="demo-radio-buttons-group-label">Question 1</FormLabel>
-                    <RadioGroup
-                        aria-labelledby="demo-radio-buttons-group-label"
-                        defaultValue="female"
-                        name="radio-buttons-group"
-                    >
-                        <FormControlLabel value="female" control={<Radio />} label="Female" />
-                        <FormControlLabel value="male" control={<Radio />} label="Male" />
-                        <FormControlLabel value="other" control={<Radio />} label="Other" />
-                    </RadioGroup>
-                </FormControl>
+                    <FormControl>
+                        <div>Question 1</div>
+                        <RadioGroup
+                            aria-labelledby="demo-radio-buttons-group-label"
+                            defaultValue="female"
+                            name="radio-buttons-group"
+                        >
+                            <FormControlLabel value="female" control={<Radio />} label="Female" />
+                            <FormControlLabel value="male" control={<Radio />} label="Male" />
+                            <FormControlLabel value="other" control={<Radio />} label="Other" />
+                        </RadioGroup>
+                    </FormControl>
                 </div>
 
 
                 {/* Text field */}
                 <div style={questionMargin}>
                     <div>Question 2</div>
-                    <TextField id="standard-basic" label="Type here..." variant="standard" 
-                    style={{width: '70%'}}/>
+                    <TextField id="standard-basic" label="Type here..." variant="standard"
+                        style={{ width: '70%' }} />
                 </div>
 
                 {/* Check box */}
                 <div style={questionMargin}>
                     <div>Question 3</div>
-                    <FormControl sx={{ m: 3 }} component="fieldset" variant="standard">
+                    <FormControl component="fieldset" variant="standard">
                         <FormLabel component="legend">You may select more than one options</FormLabel>
                         <FormGroup>
-                        <FormControlLabel
-                            control={
-                            <Checkbox checked={op1} onChange={handleCheckChange} name="option_1" />
-                            }
-                            label="Option1"
-                        />
-                        <FormControlLabel
-                            control={
-                            <Checkbox checked={op2} onChange={handleCheckChange} name="option_2" />
-                            }
-                            label="Option2"
-                        />
-                        <FormControlLabel
-                            control={
-                            <Checkbox checked={op3} onChange={handleCheckChange} name="option_3" />
-                            }
-                            label="Option3"
-                        />
+                            <FormControlLabel
+                                control={
+                                    <Checkbox checked={op1} onChange={handleCheckChange} name="option_1" />
+                                }
+                                label="Option1"
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Checkbox checked={op2} onChange={handleCheckChange} name="option_2" />
+                                }
+                                label="Option2"
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Checkbox checked={op3} onChange={handleCheckChange} name="option_3" />
+                                }
+                                label="Option3"
+                            />
                         </FormGroup>
                     </FormControl>
                 </div>
-                <Button id="addQuestion" style={submitButton} onClick={() => {}}>
+
+                <button id="submit" style={submitButton} onClick={() => {console.log('hi')}}>
                     <strong>Submit</strong>
-                </Button>     
+                </button>
             </div>
-        </div>     
+        </div>
     );
 };

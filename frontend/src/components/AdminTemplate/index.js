@@ -205,14 +205,14 @@ const SurveyBar = (props) => {
           <Button variant="contained" size="small" style={{ background: '#990000'}}>View</Button>
         </Grid>
         <Grid item xs={1.2}>
-          <Button variant="contained" size="small" onClick={() => { alert('Do you want to release Surve?');}} style={{ background: '#FFC72C'}}>Release</Button>
+          <Button variant="contained" size="small" onClick={() => { alert('Do you want to release Surve?');}} style={{ background: '#FFC72C'}} href="released">Release</Button>
         </Grid>
       </Grid>
     );
   }
 
 
-export default function AdminTemplate(){
+const AdminTemplate = () => {
   return(
     <Grid container rowSpacing={2}>
       <Grid item xs={12}>
@@ -260,3 +260,5 @@ export default function AdminTemplate(){
     </Grid>
   );
 };
+
+export {AdminTemplate, ResponsiveAppBar};
