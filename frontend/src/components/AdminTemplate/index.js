@@ -15,6 +15,12 @@ import MenuItem from '@mui/material/MenuItem';
 import SearchIcon from '@mui/icons-material/Search';
 import InputBase from '@mui/material/InputBase';
 import Grid from '@mui/material/Grid';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 
 const pages = [];
 const settings = ['Logout'];
@@ -185,6 +191,89 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
+const AlertDialog =(props)=> {
+  const [open, setOpen] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  return (
+    <div>
+      <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
+        {props.name}
+      </Button>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Warning..."}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Do you want to {props.name} this Survey?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Decline</Button>
+          <Button onClick={handleClose} autoFocus>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+}
+
+const AlertDialogRelease =(props)=> {
+  const [open, setOpen] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  return (
+    <div>
+      <Button  variant="contained" size="small" style={{ background: '#FFC72C'}} onClick={handleClickOpen}>
+        {props.name}
+      </Button>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Warning..."}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Do you want to {props.name} this Survey?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Decline</Button>
+          <Button onClick={handleClose} autoFocus>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+}
+
+
 const SurveyBar = (props) => {
   const [open, setOpen] = React.useState(true);
     return (
@@ -193,23 +282,27 @@ const SurveyBar = (props) => {
           <Button variant="contained" disabled style={{color:'black', width:'25vw'}}>{props.name}</Button>
         </Grid>
         <Grid item xs={1.2}>
-          <Button variant="contained" size="small" onClick={() => { alert('Do you want to update Survey?');}} style={{ background: '#990000'}}>Update</Button>
+          <AlertDialog name="Update"/>
         </Grid>
         <Grid item xs={1.2}>
-          <Button variant="contained" size="small" onClick={() => { alert('Do you want to delete Surve?');}} style={{ background: '#990000'}}>Delete</Button>
+          <AlertDialog name="Delete"/>
         </Grid>
         <Grid item xs={1.2}>
-          <Button variant="contained" size="small" onClick={() => { alert('Do you want to empty Surve?');}} style={{ background: '#990000'}}>Empty</Button>
+          <AlertDialog name="Empty"/>
         </Grid>
         <Grid item xs={1.2}>
           <Button variant="contained" size="small" style={{ background: '#990000'}}>View</Button>
         </Grid>
         <Grid item xs={1.2}>
-          <Button variant="contained" size="small" onClick={() => { alert('Do you want to release Surve?');}} style={{ background: '#FFC72C'}}>Release</Button>
+          <AlertDialogRelease name="Release"/>
         </Grid>
       </Grid>
     );
   }
+
+
+
+  
 
 
 export default function AdminTemplate(){
@@ -221,6 +314,7 @@ export default function AdminTemplate(){
       <Grid item xs={10}>
         <strong style={{color:'black', fontSize: '1.5vw', marginLeft:'5vw'}}>Survey Template</strong>
       </Grid>
+      
       <Grid item xs={2}>
         <Search>
         <SearchIconWrapper>
@@ -255,6 +349,12 @@ export default function AdminTemplate(){
       <Grid item xs={1}></Grid>
       <Grid item xs={11}>
         <SurveyBar name="Survey6"/>
+      </Grid>
+      <Grid item xs={10}></Grid>
+      <Grid item xs={2}>
+      <IconButton color="primary" aria-label="add to shopping cart">
+        <AddCircleOutlineIcon style={{color:'#FFC72C'}} sx={{ fontSize: 80 }}/>
+      </IconButton>
       </Grid>
       
     </Grid>
