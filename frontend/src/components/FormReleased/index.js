@@ -35,16 +35,22 @@ const subtitle = {
     padding: '1vw'
 }
 
+const numberStyle = {
+    fontSize: '2.5em'
+}
+
 function FormReleased() {
-    return(
+    return (
         <div style={contentFormat}>
-            <ResponsiveAppBar/>
-            <div style={titleFormat}>Form Released</div>
+            <ResponsiveAppBar />
+            <div style={titleFormat}><strong>Form Released</strong></div>
             <div style={background}>
-                <div style={subtitle}>The Code for Form is</div>
-                <strong>
-                    1234
-                </strong>
+                <div style={subtitle}><strong>The Code for Form is</strong></div>
+                <div style={numberStyle}>
+                    <strong>
+                        1234
+                    </strong>
+                </div>
             </div>
         </div>
     )
