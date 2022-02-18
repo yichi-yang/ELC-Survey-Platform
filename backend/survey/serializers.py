@@ -354,6 +354,6 @@ class NestedSurveySessionSerializer(serializers.ModelSerializer):
         """
         validated_data.pop('code')
         code = random.randint(1000,9999)
-        while SurveySession.objects.filter(id=code).exists():
+        while SurveySession.objects.filter(code=code).exists():
             code = random.randint(1000,9999)
         return SurveySession.objects.create(code=code, **validated_data)
