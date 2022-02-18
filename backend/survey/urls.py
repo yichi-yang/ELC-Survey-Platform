@@ -1,13 +1,10 @@
-from django.template import base
 from django.urls import include, path
 from .views import (
     SurveyViewSet,
     NestedSurveyQuestionViewSet,
     SurveyQuestionViewSet,
     SurveySubmissionViewSet,
-    NestedSurveySubmissionViewSet,
-    CodeToSurveyViewSet,
-    SurveyToCodeViewSet
+    NestedSurveySubmissionViewSet
 )
 from rest_framework_nested import routers
 
@@ -54,6 +51,4 @@ urlpatterns = [
     path(r'', include(router.urls)),
     path(r'', include(questions_router.urls)),
     path(r'', include(submissions_router.urls)),
-    path(r'mapping/codes/<int:pk>', CodeToSurveyViewSet.as_view(), name="codes"),
-    path(r'mapping/surveys/<int:pk>', SurveyToCodeViewSet.as_view(), name="surveys"),
 ]

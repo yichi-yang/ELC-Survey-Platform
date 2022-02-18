@@ -9,6 +9,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 import random
 
+
 class Survey(models.Model):
 
     id = HashidAutoField(primary_key=True, salt=build_auto_salt('Survey'))
@@ -20,7 +21,7 @@ class Survey(models.Model):
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     active = models.BooleanField(default=False)
-    prev_active= models.BooleanField(default=False)
+    prev_active = models.BooleanField(default=False)
     start_date_time = models.DateTimeField(null=True, blank=True)
     end_date_time = models.DateTimeField(null=True, blank=True)
 
@@ -39,27 +40,6 @@ class Survey(models.Model):
     @property
     def required_questions(self):
         return self.questions.filter(required=True)
-
-# post save for Survey active state
-# adds new row to SurveyCode on active
-# deletes row on SurveyCode on not active
-@receiver(post_save, sender=Survey, dispatch_uid="active")
-def update_stock(sender, instance, **kwargs):
-    if instance.active != instance.prev_active:
-        if instance.active:
-            # get random 4 digit code
-            # query table to see if id exists
-            # stop loop until row found
-            code = random.randint(1000,9999)
-            while SurveyCode.objects.filter(id=code).exists():
-                code = random.randint(1000,9999)
-            mapping = SurveyCode(id=code, survey=instance)
-            mapping.save()
-        else:
-            SurveyCode.objects.filter(survey=instance.id).delete()
-    # update prev active state to current state
-    # use this method instead of .save() to avoid infinite recursion
-    Survey.objects.filter(id=instance.id).update(prev_active=instance.active)
 
 
 class SurveyQuestion(models.Model):
@@ -159,6 +139,29 @@ class SurveyResponse(models.Model):
     def __str__(self):
         return f'SurveyResponse submission={self.submission.id} question={self.question.id}'
 
-class SurveyCode(models.Model):
-    id = models.PositiveIntegerField(primary_key=True, validators=[MinValueValidator(1000), MaxValueValidator(9999)])
-    survey = models.ForeignKey(Survey, on_delete=models.CASCADE)
+
+class SurveySession(models.Model):
+    # Let's have an id field because the code might be reused.
+    # The id should always be unique.
+    id = HashidAutoField(
+        primary_key=True,
+        salt=build_auto_salt('SurveySession')
+    )
+    code = models.PositiveIntegerField(
+        unique=True,
+        validators=[
+            MinValueValidator(1000),
+            # MaxValueValidator(9999) # not sure if we need this?
+        ]
+    )
+    survey = models.ForeignKey(
+        Survey,
+        on_delete=models.CASCADE
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+
+    def __str__(self):
+        return f'SurveySession survey={self.survey.id} code={self.code}'
