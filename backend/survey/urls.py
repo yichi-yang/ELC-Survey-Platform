@@ -2,10 +2,7 @@ from django.urls import include, path
 from .views import (
     SurveyViewSet,
     NestedSurveyQuestionViewSet,
-    SurveyQuestionViewSet,
-    SurveySubmissionViewSet,
     NestedSurveySubmissionViewSet,
-    SurveySessionViewSet,
     NestedSurveySessionViewSet
 )
 from rest_framework_nested import routers
@@ -15,21 +12,6 @@ router.register(
     r'surveys',
     SurveyViewSet,
     basename='survey'
-)
-router.register(
-    r'questions',
-    SurveyQuestionViewSet,
-    basename='questions'
-)
-router.register(
-    r'submissions',
-    SurveySubmissionViewSet,
-    basename='submissions'
-)
-router.register(
-    r'sessions',
-    SurveySessionViewSet,
-    basename='sessions'
 )
 
 questions_router = routers.NestedSimpleRouter(
@@ -54,7 +36,7 @@ submissions_router.register(
 )
 sessions_router = routers.NestedSimpleRouter(
     router,
-    r'sessions',
+    r'surveys',
     lookup='survey'
 )
 sessions_router.register(

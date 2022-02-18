@@ -5,11 +5,8 @@ from rest_framework.generics import get_object_or_404
 from .models import Survey, SurveyQuestion, SurveySubmission, SurveySession
 from .serializers import (
     SurveySerializer,
-    SurveyQuestionSerializer,
     NestedSurveyQuestionSerializer,
-    SurveySubmissionSerializer,
     NestedSurveySubmissionSerializer,
-    SurveySessionSerializer,
     NestedSurveySessionSerializer
 )
 from .utils import handle_invalid_hashid
@@ -199,39 +196,6 @@ class SurveyViewSet(viewsets.ModelViewSet):
         return Survey.objects.all()
 
 
-class SurveyQuestionViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows survey questions to be viewed or edited.
-    """
-    queryset = SurveyQuestion.objects\
-        .select_related('survey')\
-        .all()\
-        # .prefetch_related('choices')
-    serializer_class = SurveyQuestionSerializer
-    permission_classes = [IsParentSurveyOwner | ReadOnlyWhenParentSurveyActive]
-
-    def get_queryset(self):
-
-        query_set = SurveyQuestion.objects.select_related('survey')
-
-        if self.action == 'list':
-            now = timezone.now()
-            query_set = query_set.filter(
-                # either user is the owner
-                Q(survey__owner=self.request.user.id) |
-                # or the survey is active
-                (
-                    Q(survey__active=True)
-                    & (Q(survey__start_date_time=None) | Q(survey__start_date_time__lte=now))
-                    & (Q(survey__end_date_time=None) | Q(survey__start_date_time__gte=now))
-                )
-            )
-        else:
-            query_set = query_set.all()
-
-        return query_set.prefetch_related('choices')
-
-
 class NestedSurveyQuestionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
     """
     API endpoint that allows questions of a particular survey to be viewed or edited.
@@ -251,42 +215,6 @@ class NestedSurveyQuestionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
             .select_related('survey')\
             .filter(survey=self.kwargs['survey_pk'])\
             .prefetch_related('choices')
-
-
-class SurveySubmissionViewSet(mixins.CreateModelMixin,
-                              mixins.RetrieveModelMixin,
-                              mixins.DestroyModelMixin,
-                              mixins.ListModelMixin,
-                              viewsets.GenericViewSet):
-    """
-    API endpoint that allows survey submissions to be created or viewed.
-    Editing a submission is not supported.
-    """
-    serializer_class = SurveySubmissionSerializer
-    permission_classes = [
-        IsParentSurveyOwner | CreateOnlyWhenParentSurveyActive
-    ]
-
-    def get_queryset(self):
-
-        query_set = SurveySubmission.objects.select_related('survey')
-
-        if self.action == 'list':
-            now = timezone.now()
-            query_set = query_set.filter(
-                # either user is the owner
-                Q(survey__owner=self.request.user.id) |
-                # or the survey is active
-                (
-                    Q(survey__active=True)
-                    & (Q(survey__start_date_time=None) | Q(survey__start_date_time__lte=now))
-                    & (Q(survey__end_date_time=None) | Q(survey__start_date_time__gte=now))
-                )
-            )
-        else:
-            query_set = query_set.all()
-
-        return query_set.prefetch_related('responses')
 
 
 class NestedSurveySubmissionViewSet(NestedViewMixIn,
@@ -317,13 +245,11 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
             .filter(survey=self.kwargs['survey_pk'])\
             .prefetch_related('responses')
 
-class SurveySessionViewSet(viewsets.ModelViewSet):
-    serializer_class = SurveySessionSerializer
-    permission_classes = [IsParentSurveyOwner | ReadOnlyWhenParentSurveyActive]
-    def get_queryset(self):
-        return SurveySession.objects.select_related('survey')
 
 class NestedSurveySessionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
+    """
+    API endpoint that allows survey sessions to be created or viewed.
+    """
     serializer_class = NestedSurveySessionSerializer
     permission_classes = [IsParentSurveyOwner | ReadOnlyWhenParentSurveyActive]
 

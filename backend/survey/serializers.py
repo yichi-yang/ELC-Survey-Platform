@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from .models import (Survey, SurveyQuestion, SurveyQuestionChoice,
                      SurveyResponse, SurveySubmission, Survey, SurveySession)
 from .validators import OwnedByRequestUser
-
+import random
 
 class SerializerContextDefault:
     """
@@ -170,16 +170,6 @@ class NestedSurveyQuestionSerializer(serializers.ModelSerializer):
         return instance
 
 
-class SurveyQuestionSerializer(NestedSurveyQuestionSerializer):
-    survey = serializers.PrimaryKeyRelatedField(
-        pk_field=HashidSerializerCharField(source_field='survey.Survey.id'),
-        queryset=Survey.objects.all()
-    )
-
-    class Meta(NestedSurveyQuestionSerializer.Meta):
-        pass
-
-
 class NestedSurveyResponseSerializer(serializers.ModelSerializer):
 
     question = serializers.PrimaryKeyRelatedField(
@@ -341,35 +331,29 @@ class NestedSurveySubmissionSerializer(serializers.ModelSerializer):
         raise NotImplementedError('Updating a submission is not supported.')
 
 
-class SurveySubmissionSerializer(NestedSurveySubmissionSerializer):
-    survey = serializers.PrimaryKeyRelatedField(
-        pk_field=HashidSerializerCharField(source_field='survey.Survey.id'),
-        queryset=Survey.objects.all()
-    )
-
-    class Meta(NestedSurveySubmissionSerializer.Meta):
-        pass
-
 class NestedSurveySessionSerializer(serializers.ModelSerializer):
     id = HashidSerializerCharField(
         source_field='survey.Survey.id',
         read_only=True
     )
-    survey = serializers.HiddenField(
-        default=SerializerContextDefault(
-            lambda context: context['view'].parent_instance
-        ),
-        validators=[OwnedByRequestUser()]
-    )
-    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    class Meta:
-        model = SurveySession
-        fields = ['id', 'code', 'survey', 'owner']
-
-class SurveySessionSerializer(NestedSurveyQuestionSerializer):
     survey = serializers.PrimaryKeyRelatedField(
         pk_field=HashidSerializerCharField(source_field='survey.Survey.id'),
         queryset=Survey.objects.all()
     )
-    class Meta(NestedSurveySessionSerializer.Meta):
-        pass
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    code = serializers.IntegerField(allow_null=True)
+    
+    class Meta:
+        model = SurveySession
+        fields = ['id', 'code', 'survey', 'owner']
+        read_only_fields = ('survey', 'owner')
+
+    def create(self, validated_data):
+        """
+        Create SurveySession with random valid code
+        """
+        validated_data.pop('code')
+        code = random.randint(1000,9999)
+        while SurveySession.objects.filter(id=code).exists():
+            code = random.randint(1000,9999)
+        return SurveySession.objects.create(code=code, **validated_data)
