@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from hashid_field.rest import HashidSerializerCharField
 from django.utils.translation import gettext_lazy as _
-from .models import Survey, SurveyQuestion, SurveyQuestionChoice, SurveyResponse, SurveySubmission, Survey, SurveyCode
+from .models import (Survey, SurveyQuestion, SurveyQuestionChoice,
+                     SurveyResponse, SurveySubmission, Survey)
 from .validators import OwnedByRequestUser
 
 
@@ -348,13 +349,3 @@ class SurveySubmissionSerializer(NestedSurveySubmissionSerializer):
 
     class Meta(NestedSurveySubmissionSerializer.Meta):
         pass
-
-class SurveyCodeSerializer(serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField(read_only=True)
-    survey = serializers.PrimaryKeyRelatedField(
-        pk_field=HashidSerializerCharField(source_field='survey.Survey.id'),
-        queryset=Survey.objects.all()
-    )
-    class Meta:
-        model = SurveyCode
-        fields = ['id', 'survey']
