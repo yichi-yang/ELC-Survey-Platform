@@ -2,13 +2,15 @@ from django.db.models import Q, QuerySet
 from django.utils import timezone
 from rest_framework import viewsets, mixins
 from rest_framework.generics import get_object_or_404
-from .models import Survey, SurveyQuestion, SurveySubmission
+from .models import Survey, SurveyQuestion, SurveySubmission, SurveySession
 from .serializers import (
     SurveySerializer,
     SurveyQuestionSerializer,
     NestedSurveyQuestionSerializer,
     SurveySubmissionSerializer,
-    NestedSurveySubmissionSerializer
+    NestedSurveySubmissionSerializer,
+    SurveySessionSerializer,
+    NestedSurveySessionSerializer
 )
 from .utils import handle_invalid_hashid
 from .permissions import (
@@ -204,7 +206,7 @@ class SurveyQuestionViewSet(viewsets.ModelViewSet):
     queryset = SurveyQuestion.objects\
         .select_related('survey')\
         .all()\
-        .prefetch_related('choices')
+        # .prefetch_related('choices')
     serializer_class = SurveyQuestionSerializer
     permission_classes = [IsParentSurveyOwner | ReadOnlyWhenParentSurveyActive]
 
@@ -315,3 +317,21 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
             .filter(survey=self.kwargs['survey_pk'])\
             .prefetch_related('responses')
 
+class SurveySessionViewSet(viewsets.ModelViewSet):
+    serializer_class = SurveySessionSerializer
+    permission_classes = [IsParentSurveyOwner | ReadOnlyWhenParentSurveyActive]
+    def get_queryset(self):
+        return SurveySession.objects.select_related('survey')
+
+class NestedSurveySessionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
+    serializer_class = NestedSurveySessionSerializer
+    permission_classes = [IsParentSurveyOwner | ReadOnlyWhenParentSurveyActive]
+
+    parent_model_queryset = Survey.objects.all()
+    parent_pk_name = 'survey_pk'
+
+    @handle_invalid_hashid('Survey')
+    def get_queryset(self):
+        return SurveySession.objects\
+            .select_related('survey')\
+            .filter(survey=self.kwargs['survey_pk'])
