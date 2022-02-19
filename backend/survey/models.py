@@ -2,12 +2,10 @@ from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from hashid_field import HashidAutoField
-from django.utils import timezone
 from .utils import build_auto_salt
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MinValueValidator
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-import random
 
 
 class Survey(models.Model):
@@ -48,6 +46,7 @@ class SurveySession(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f'SurveySession survey={self.survey.id} code={self.code}'
@@ -109,34 +108,6 @@ class SurveyQuestionChoice(models.Model):
 
     def __str__(self):
         return f'SurveyQuestionChoice id={self.id} question={self.question.id} value={self.value!r}'
-
-
-class SurveySession(models.Model):
-    # Let's have an id field because the code might be reused.
-    # The id should always be unique.
-    id = HashidAutoField(
-        primary_key=True,
-        salt=build_auto_salt('SurveySession')
-    )
-    code = models.PositiveIntegerField(
-        unique=True,
-        validators=[
-            MinValueValidator(1000),
-            # MaxValueValidator(9999) # not sure if we need this?
-        ]
-    )
-    survey = models.ForeignKey(
-        Survey,
-        on_delete=models.CASCADE
-    )
-    owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f'SurveySession survey={self.survey.id} code={self.code}'
 
 
 class SurveySubmission(models.Model):
