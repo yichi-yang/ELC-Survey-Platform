@@ -52,7 +52,7 @@ class SurveySession(models.Model):
         return f'SurveySession survey={self.survey.id} code={self.code}'
 
     class Meta:
-        unique_together = ('id', 'owner')
+        unique_together = ('survey', 'owner')
 
 
 class SurveyQuestion(models.Model):

@@ -1,3 +1,4 @@
+from urllib import request
 from django.db.models import QuerySet
 from rest_framework import viewsets, mixins
 from rest_framework.generics import get_object_or_404
@@ -15,7 +16,7 @@ from .permissions import (
     IsParentSurveyOwner,
     CreateOnlyWhenParentSurveyActive
 )
-
+import random
 
 class NestedViewMixIn:
     """
@@ -754,3 +755,9 @@ class NestedSurveySessionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
         return SurveySession.objects\
             .select_related('survey')\
             .filter(survey=self.kwargs['survey_pk'])
+
+    def perform_create(self, serializer):
+        code = random.randint(1000,9999)
+        while SurveySession.objects.filter(code=code).exists():
+            code = random.randint(1000,9999)
+        serializer.save(code=code)
