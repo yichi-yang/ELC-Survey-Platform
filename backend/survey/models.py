@@ -13,29 +13,13 @@ import random
 class Survey(models.Model):
 
     id = HashidAutoField(primary_key=True, salt=build_auto_salt('Survey'))
-    owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
-    )
+
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    active = models.BooleanField(default=False)
-    prev_active = models.BooleanField(default=False)
-    start_date_time = models.DateTimeField(null=True, blank=True)
-    end_date_time = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f'Survey id={self.id} title={self.title!r}'
-
-    @property
-    def is_active(self) -> bool:
-        now = timezone.now()
-        if self.start_date_time and now < self.start_date_time:
-            return False
-        if self.end_date_time and now > self.end_date_time:
-            return False
-        return self.active
 
     @property
     def required_questions(self):
@@ -51,6 +35,7 @@ class SurveyQuestion(models.Model):
         SCALE = 'SC', _('Scale')
         SHORT_ANSWER = 'SA', _('Short Answer')
         PARAGRAPH = 'PA', _('Long Answer')
+        RANKING = 'RK', _('Ranking')
 
     id = HashidAutoField(
         primary_key=True,
@@ -68,7 +53,7 @@ class SurveyQuestion(models.Model):
         max_length=2,
         choices=QuestionType.choices
     )
-    # used for SCALE type
+    # used for SCALE & RANKING type
     range_min = models.FloatField(null=True, blank=True)
     range_max = models.FloatField(null=True, blank=True)
     range_default = models.FloatField(null=True, blank=True)
@@ -162,6 +147,7 @@ class SurveySession(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f'SurveySession survey={self.survey.id} code={self.code}'

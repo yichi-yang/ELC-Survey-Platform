@@ -2,8 +2,6 @@ from django.urls import include, path
 from .views import (
     SurveyViewSet,
     NestedSurveyQuestionViewSet,
-    SurveyQuestionViewSet,
-    SurveySubmissionViewSet,
     NestedSurveySubmissionViewSet
 )
 from rest_framework_nested import routers
@@ -13,16 +11,6 @@ router.register(
     r'surveys',
     SurveyViewSet,
     basename='survey'
-)
-router.register(
-    r'questions',
-    SurveyQuestionViewSet,
-    basename='questions'
-)
-router.register(
-    r'submissions',
-    SurveySubmissionViewSet,
-    basename='submissions'
 )
 questions_router = routers.NestedSimpleRouter(
     router,
