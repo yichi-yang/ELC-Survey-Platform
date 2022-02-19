@@ -644,7 +644,7 @@ class SurveyQuestionViewSetTests(TestCase):
         response = self.client.post(
             f'/api/surveys/{self.survey.id}/questions/',
             {
-                "number": 1,
+                "number": 7,
                 "title": "Please rank the following roles:",
                 "required": True,
                 "type": "RK",
@@ -704,7 +704,7 @@ class SurveyQuestionViewSetTests(TestCase):
         self.assertDictEqual(
             question_data,
             {
-                "number": 1,
+                "number": 7,
                 "title": "Please rank the following roles:",
                 "required": True,
                 "type": "RK",
