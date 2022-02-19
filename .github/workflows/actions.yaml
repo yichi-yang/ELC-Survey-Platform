@@ -46,5 +46,8 @@ jobs:
         run: pip install -r backend/requirements.txt
         if: steps.cache-virtualenv.outputs.cache-hit != 'true'
 
+      - name: Ensure migrations are up to date
+        run: python backend/manage.py makemigrations --check --dry-run
+
       - name: Run tests
         run: python backend/manage.py test backend/
