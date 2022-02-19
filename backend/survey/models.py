@@ -25,6 +25,34 @@ class Survey(models.Model):
     def required_questions(self):
         return self.questions.filter(required=True)
 
+class SurveySession(models.Model):
+    # Let's have an id field because the code might be reused.
+    # The id should always be unique.
+    id = HashidAutoField(
+        primary_key=True,
+        salt=build_auto_salt('SurveySession')
+    )
+    code = models.PositiveIntegerField(
+        unique=True,
+        validators=[
+            MinValueValidator(1000),
+            # MaxValueValidator(9999) # not sure if we need this?
+        ]
+    )
+    survey = models.ForeignKey(
+        Survey,
+        on_delete=models.CASCADE
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+
+    def __str__(self):
+        return f'SurveySession survey={self.survey.id} code={self.code}'
+
+    class Meta:
+        unique_together = ('id', 'owner')
 
 class SurveyQuestion(models.Model):
 
@@ -87,7 +115,7 @@ class SurveySubmission(models.Model):
         primary_key=True,
         salt=build_auto_salt('SurveySubmission')
     )
-    survey = models.ForeignKey(Survey, on_delete=models.CASCADE)
+    session = models.ForeignKey(SurveySession, on_delete=models.CASCADE)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

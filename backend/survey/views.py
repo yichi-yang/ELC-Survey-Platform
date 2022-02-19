@@ -6,8 +6,10 @@ from .models import Survey, SurveyQuestion, SurveySubmission
 from .serializers import (
     SurveySerializer,
     NestedSurveyQuestionSerializer,
-    NestedSurveySubmissionSerializer
+    NestedSurveySubmissionSerializer,
+    NestedSurveySessionSerializer
 )
+from .models import Survey, SurveyQuestion, SurveySubmission, SurveySession
 from .utils import handle_invalid_hashid
 from .permissions import (
     IsParentSurveyOwner,
@@ -708,7 +710,6 @@ class NestedSurveyQuestionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
             .prefetch_related('choices')
 
 
-
 class NestedSurveySubmissionViewSet(NestedViewMixIn,
                                     mixins.CreateModelMixin,
                                     mixins.RetrieveModelMixin,
@@ -737,3 +738,19 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
             .filter(survey=self.kwargs['survey_pk'])\
             .prefetch_related('responses')
 
+
+class NestedSurveySessionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
+    """
+    API endpoint that allows survey sessions to be created or viewed.
+    """
+    serializer_class = NestedSurveySessionSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly] # we can change this later
+
+    parent_model_queryset = Survey.objects.all()
+    parent_pk_name = 'survey_pk'
+
+    @handle_invalid_hashid('Survey')
+    def get_queryset(self):
+        return SurveySession.objects\
+            .select_related('survey')\
+            .filter(survey=self.kwargs['survey_pk'])
