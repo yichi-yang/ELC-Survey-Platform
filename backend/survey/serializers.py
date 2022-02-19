@@ -4,7 +4,6 @@ from django.utils.translation import gettext_lazy as _
 from .models import (Survey, SurveyQuestion, SurveyQuestionChoice,
                      SurveyResponse, SurveySubmission, Survey, SurveySession)
 from .validators import OwnedByRequestUser
-import random
 
 class SerializerContextDefault:
     """
@@ -359,14 +358,4 @@ class NestedSurveySessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = SurveySession
         fields = ['id', 'code', 'survey', 'owner']
-        read_only_fields = ('survey', 'owner')
-
-    def create(self, validated_data):
-        """
-        Create SurveySession with random valid code
-        """
-        validated_data.pop('code')
-        code = random.randint(1000,9999)
-        while SurveySession.objects.filter(code=code).exists():
-            code = random.randint(1000,9999)
-        return SurveySession.objects.create(code=code, **validated_data)
+        read_only_fields = ('survey', 'owner', 'code')
