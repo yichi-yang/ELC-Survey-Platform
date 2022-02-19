@@ -13,7 +13,6 @@ router.register(
     SurveyViewSet,
     basename='survey'
 )
-
 questions_router = routers.NestedSimpleRouter(
     router,
     r'surveys',

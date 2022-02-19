@@ -25,12 +25,10 @@ class SurveySerializer(serializers.ModelSerializer):
         source_field='survey.Survey.id',
         read_only=True
     )
-    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Survey
-        fields = ['id', 'owner', 'title', 'description', 'created_at',
-                  'active', 'start_date_time', 'end_date_time']
+        fields = ['id', 'title', 'description', 'created_at']
 
 
 class NestedSurveyQuestionChoiceSerializer(serializers.ModelSerializer):
@@ -57,16 +55,30 @@ class NestedSurveyQuestionSerializer(serializers.ModelSerializer):
     )
     choices = NestedSurveyQuestionChoiceSerializer(many=True, required=False)
 
+    # some fields are only required by certain question types
     conditional_fields = {
         'choices': [
             SurveyQuestion.QuestionType.MULTICHOICE,
             SurveyQuestion.QuestionType.CHECKBOXES,
-            SurveyQuestion.QuestionType.DROPDOWN
+            SurveyQuestion.QuestionType.DROPDOWN,
+            SurveyQuestion.QuestionType.RANKING,
         ],
-        'range_min': [SurveyQuestion.QuestionType.SCALE],
-        'range_max': [SurveyQuestion.QuestionType.SCALE],
-        'range_default': [SurveyQuestion.QuestionType.SCALE],
-        'range_step': [SurveyQuestion.QuestionType.SCALE]
+        'range_min': [
+            SurveyQuestion.QuestionType.SCALE,
+            SurveyQuestion.QuestionType.RANKING,
+        ],
+        'range_max': [
+            SurveyQuestion.QuestionType.SCALE,
+            SurveyQuestion.QuestionType.RANKING,
+        ],
+        'range_default': [
+            SurveyQuestion.QuestionType.SCALE,
+            SurveyQuestion.QuestionType.RANKING,
+        ],
+        'range_step': [
+            SurveyQuestion.QuestionType.SCALE,
+            SurveyQuestion.QuestionType.RANKING,
+        ]
     }
 
     class Meta:
@@ -85,15 +97,16 @@ class NestedSurveyQuestionSerializer(serializers.ModelSerializer):
         """
         Check if required fields exist based on question types.
         """
+        # check required fields exists
         instance_question_type = self.instance.type if self.instance else None
         question_type = data.get('type', instance_question_type)
-        for field, type_list in self.conditional_fields.items():
+        for field, required_by_type in self.conditional_fields.items():
             field_data = data.get(field, None)
-            if question_type in type_list and field_data is None:
+            if question_type in required_by_type and field_data is None:
                 raise serializers.ValidationError(
                     {field: f'{field!r} is required for question type {question_type!r}'}
                 )
-            elif question_type not in type_list and field_data is not None:
+            elif question_type not in required_by_type and field_data is not None:
                 raise serializers.ValidationError(
                     {field: f'{field!r} is redundant for question type {question_type!r}'}
                 )
