@@ -31,14 +31,15 @@ export default function AdminLogIn() {
   const [password, setPassword] = useState('');
 
   function logIn() {
-    axios
-      .post('/api/auth/login/', { username: username, password: password })
+    axios.post('/api/auth/login/', { username: username, password: password })
       .then((res) => {
         if (res.status === 200 && res.data.access_token) {
+          console.log(res);
           localStorage.setItem('token', res.data.access_token);
+          localStorage.setItem('refreshToken', res.data.refresh_token);
           navigate('/template');
         }
-      });
+      }).catch((error)=>{console.log(error)});
   }
 
   function changePassword(e) {

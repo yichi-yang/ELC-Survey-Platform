@@ -14,6 +14,7 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import SquareIcon from '@mui/icons-material/Square';
 import Switch from '@mui/material/Switch';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export default function CreateSurvey(props) {
   const navigate = useNavigate();
@@ -57,7 +58,7 @@ export default function CreateSurvey(props) {
 
   const addQuestion = {
     backgroundColor: '#FFC72C',
-    width: '60vw',
+    width: '100%',
     textAlign: 'center',
     color: 'white',
     marginTop: '5vh',
@@ -130,15 +131,13 @@ export default function CreateSurvey(props) {
       <div>
         {options.map((q) => {
           return (
-            <div style={{ margin: '5px', fontSize: '1.2vw' }}>
+            <div style={{ margin: '5px' }}>
               {questionType ? (
-                <CropSquareIcon fontSize="1vw" />
+                <CropSquareIcon fontSize="1%" />
               ) : (
-                <CircleOutlinedIcon fontSize="1vw" />
+                <CircleOutlinedIcon fontSize="1%" />
               )}
-                <span style={{ padding: '0.5vw', fontSize: '1vw' }}>
-                        {q}
-                </span>
+              <span style={{ padding: '0.5vw', fontSize: '90%' }}>{q}</span>
             </div>
           );
         })}
@@ -151,7 +150,7 @@ export default function CreateSurvey(props) {
       <div>
         {questions.map((q, i) => {
           return (
-            <div style={{ margin: '1vw 4vw' }} key={i}>
+            <div style={{ margin: '2% 6%' }} key={i}>
               <strong>{i + 1 + '. ' + q.question}</strong>
               {q.required ? '(*)' : ''}
               <Button
@@ -160,7 +159,7 @@ export default function CreateSurvey(props) {
                   questions.splice(e.target.id, 1);
                   setUpdate(!shouldRender);
                 }}
-                style={{ color: '#990000', fontSize: '1vw' }}
+                style={{ color: '#990000', fontSize: '1%' }}
               >
                 Delete
               </Button>
@@ -174,7 +173,7 @@ export default function CreateSurvey(props) {
                   disabled={true}
                   style={{
                     border: '1px solid grey',
-                    width: '40vw',
+                    width: '40%',
                   }}
                 />
               ) : (
@@ -186,6 +185,39 @@ export default function CreateSurvey(props) {
       </div>
     );
   }
+
+  const [surveyID, setSurveyID] = useState(localStorage.getItem('surveyID'));
+  let bearer = 'Bearer ' + localStorage.getItem('token');
+  let headers = {
+    Authorization: 'Bearer ' + localStorage.getItem('token'),
+  };
+  console.log(localStorage.getItem('token'));
+
+  React.useEffect(() => {
+    if (surveyID === null) {
+      axios
+        .post(
+          '/api/surveys/',
+          { title: title, description: description },
+          { headers }
+        )
+        .then((response) => {
+          if (response.status !== 201) {
+            navigate('/admin');
+          }
+          localStorage.setItem('surveyID', response.data.id);
+        })
+        .catch(() => navigate('/Admin'));
+    } else {
+      //TODO shuyaoxi
+      axios.get(`/api/surveys/${surveyID}}/`).then((res) => {
+        if (res.status === 200) {
+          setTitle(res.data.title);
+          setDescription(res.date.description);
+        }
+      });
+    }
+  }, []);
 
   return (
     <div
@@ -247,8 +279,10 @@ export default function CreateSurvey(props) {
         <div
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'space-evenly',
             alignItems: 'center',
+            width: '95%',
+            marginLeft: '3%',
           }}
         >
           <h4 style={{ color: '#990000' }}>Description</h4>
@@ -329,9 +363,9 @@ export default function CreateSurvey(props) {
                   return (
                     <div style={{ margin: '5px', fontSize: '1.2vw' }}>
                       {questionType ? (
-                        <CropSquareIcon fontSize="1vw" />
+                        <CropSquareIcon fontSize="1%" />
                       ) : (
-                        <CircleOutlinedIcon fontSize="1vw" />
+                        <CircleOutlinedIcon fontSize="1%" />
                       )}
                       <span style={{ padding: '0.8vw', fontSize: '1vw' }}>
                         {q}
@@ -369,7 +403,7 @@ export default function CreateSurvey(props) {
                       borderBottom: 'solid 1px #C4C4C4',
                       fontWeight: 'bold',
                       margin: '0.5vw 0 0 0.5vw',
-                      paddingLeft:'0.5vw'
+                      paddingLeft: '0.5vw',
                     }}
                   />
                 </div>
@@ -459,7 +493,7 @@ export default function CreateSurvey(props) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'left',
-            alignItems:'center',
+            alignItems: 'center',
           }}
         >
           <strong style={{ color: '#990000' }}>Divide By</strong>
