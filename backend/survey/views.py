@@ -696,6 +696,7 @@ class NestedSurveyQuestionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
     """
     serializer_class = NestedSurveyQuestionSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = None # disable pagination
 
     # NestedViewMixIn will set
     # self.parent_instance = Survey.objects.get(pk=self.kwargs['survey_pk'])
