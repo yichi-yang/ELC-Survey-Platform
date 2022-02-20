@@ -18,6 +18,11 @@ import axios from 'axios';
 
 export default function CreateSurvey(props) {
   const navigate = useNavigate();
+
+  let headers = {
+    Authorization: 'Bearer ' + localStorage.getItem('token'),
+  };
+
   const headingStyle = {
     height: '15vh',
     width: '100vw',
@@ -75,9 +80,14 @@ export default function CreateSurvey(props) {
 
   const [shouldRender, setUpdate] = useState(false);
 
-  const types = ['Multiple Choice', 'Selection', 'Short Answer'];
+  const types = ['MC', 'CB', 'SA'];
+  function typeConverter(type) {
+    for (let i = 0; i < types.length; i++) {
+      if (types[i] === type) return i;
+    }
+  }
 
-  const [title, setTitle] = useState('Untitled Survey');
+  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [questions, setQuestions] = useState([]);
 
@@ -116,14 +126,72 @@ export default function CreateSurvey(props) {
     setRequired(false);
   }
 
+  function updateTitle(){
+    if(title.length)
+      axios.patch(`/api/surveys/${surveyID}/`,{"title":title},{headers})
+  }
+
+  function updateDescription(){
+    if(description.length)
+      axios.patch(`/api/surveys/${surveyID}/`,{"description":description},{headers})
+  }
+
+  function deleteQuestion(e) {
+    let questionId = questions[e.target.id].id;
+    axios
+      .delete(`/api/surveys/${surveyID}/questions/${questionId}/`, { headers })
+      .then((res) => {
+        if (res.status === 204) {
+          questions.splice(e.target.id, 1);
+          setUpdate(!shouldRender);
+        }
+      });
+  }
+
   function appendQuestion() {
-    let newItem = {
-      options: options,
-      question: question,
-      type: questionType,
+    let requestContent = {
+      number: questions.length + 1,
+      title: question,
       required: required,
+      type: types[questionType],
     };
-    setQuestions(questions.concat(newItem));
+
+    if (questionType !== 2) {
+      let parsedOptions = [];
+      for (let i = 0; i < options.length; i++) {
+        parsedOptions.push({
+          value: (i + 1).toString(),
+          description: options[i],
+        });
+      }
+
+      requestContent = {
+        number: questions.length + 1,
+        title: question,
+        required: required,
+        type: types[questionType],
+        choices: parsedOptions,
+      };
+    }
+
+    axios
+      .post(`/api/surveys/${surveyID}/questions/`, requestContent, { headers })
+      .then((res) => {
+        if (res.status === 201) {
+          let newItem = {
+            options: options,
+            question: question,
+            type: questionType,
+            required: required,
+            id: res.data.id,
+          };
+          setQuestions(questions.concat(newItem));
+          reset();
+          setNewQuestion(false);
+        } else {
+          //TODO: @shuyaoxie add alert maybe
+        }
+      });
   }
 
   function listOptions(options, questionType) {
@@ -156,8 +224,7 @@ export default function CreateSurvey(props) {
               <Button
                 id={i}
                 onClick={(e) => {
-                  questions.splice(e.target.id, 1);
-                  setUpdate(!shouldRender);
+                  deleteQuestion(e);
                 }}
                 style={{ color: '#990000', fontSize: '1%' }}
               >
@@ -187,14 +254,10 @@ export default function CreateSurvey(props) {
   }
 
   const [surveyID, setSurveyID] = useState(localStorage.getItem('surveyID'));
-  let bearer = 'Bearer ' + localStorage.getItem('token');
-  let headers = {
-    Authorization: 'Bearer ' + localStorage.getItem('token'),
-  };
-  console.log(localStorage.getItem('token'));
 
   React.useEffect(() => {
     if (surveyID === null) {
+      setTitle('Untitled Survey');
       axios
         .post(
           '/api/surveys/',
@@ -205,15 +268,34 @@ export default function CreateSurvey(props) {
           if (response.status !== 201) {
             navigate('/admin');
           }
-          localStorage.setItem('surveyID', response.data.id);
+          setSurveyID(response.data.id);
+          localStorage.setItem('surveyID', surveyID);
         })
         .catch(() => navigate('/Admin'));
     } else {
-      //TODO shuyaoxi
-      axios.get(`/api/surveys/${surveyID}}/`).then((res) => {
+      axios.get(`/api/surveys/${surveyID}/`).then((res) => {
         if (res.status === 200) {
           setTitle(res.data.title);
-          setDescription(res.date.description);
+          setDescription(res.data.description);
+        }
+      });
+      axios.get(`/api/surveys/${surveyID}/questions/`).then((res) => {
+        if (res.status === 200) {
+          let existingQuestions = [];
+          let choices = [];
+          res.data.forEach((q) => {
+            choices = [];
+            if (q.choices)
+              q.choices.forEach((c) => choices.push(c.description));
+            existingQuestions.push({
+              options: choices,
+              question: q.title,
+              type: typeConverter(q.type),
+              required: q.required,
+              id: q.id,
+            });
+          });
+          setQuestions(existingQuestions);
         }
       });
     }
@@ -273,7 +355,10 @@ export default function CreateSurvey(props) {
             fontSize: '1.2em',
             color: 'grey',
           }}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => {
+            setTitle(e.target.value);
+          }}
+          onBlur={updateTitle()}
         />
 
         <div
@@ -288,7 +373,9 @@ export default function CreateSurvey(props) {
           <h4 style={{ color: '#990000' }}>Description</h4>
           <textarea
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e)=>setDescription(e.target.value)}
+            onBlur={updateDescription}
+
             style={{
               border: '1px solid grey',
               minHeight: '30px',
@@ -439,10 +526,7 @@ export default function CreateSurvey(props) {
                 disabled={options.length === 0 && questionType !== 2}
                 onClick={(e) => {
                   e.preventDefault();
-                  //TODO:add to question list
                   appendQuestion();
-                  reset();
-                  setNewQuestion(false);
                 }}
               >
                 <DoneOutlineIcon />
