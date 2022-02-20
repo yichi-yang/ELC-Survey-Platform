@@ -32,15 +32,18 @@ export default function AdminLogIn() {
   const [password, setPassword] = useState('');
 
   function logIn() {
-    axios.post('/api/auth/login/', { username: username, password: password })
-      .then((res) => {
-        if (res.status === 200 && res.data.access_token) {
-          console.log(res);
-          TokenStorage.setAccessToken(res.data.access_token);
-          TokenStorage.setRefreshToken(res.data.refresh_token);
-          navigate('/template');
-        }
-      }).catch((error)=>{console.log(error)});
+    axios.post(
+      '/api/auth/login/',
+      { username: username, password: password },
+      { useJWT: false }
+    ).then((res) => {
+      if (res.status === 200 && res.data.access_token) {
+        console.log(res);
+        TokenStorage.setAccessToken(res.data.access_token);
+        TokenStorage.setRefreshToken(res.data.refresh_token);
+        navigate('/template');
+      }
+    }).catch((error) => { console.log(error) });
   }
 
   function changePassword(e) {
