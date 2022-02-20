@@ -261,8 +261,7 @@ export default function CreateSurvey(props) {
       axios
         .post(
           '/api/surveys/',
-          { title: title, description: description },
-          { headers }
+          { title: title, description: description }
         )
         .then((response) => {
           if (response.status !== 201) {
