@@ -187,19 +187,13 @@ export default function CreateSurvey(props) {
   }
 
   const [surveyID, setSurveyID] = useState(localStorage.getItem('surveyID'));
-  let bearer = 'Bearer ' + localStorage.getItem('token');
-  let headers = {
-    Authorization: 'Bearer ' + localStorage.getItem('token'),
-  };
-  console.log(localStorage.getItem('token'));
 
   React.useEffect(() => {
     if (surveyID === null) {
       axios
         .post(
           '/api/surveys/',
-          { title: title, description: description },
-          { headers }
+          { title: title, description: description }
         )
         .then((response) => {
           if (response.status !== 201) {
@@ -210,10 +204,10 @@ export default function CreateSurvey(props) {
         .catch(() => navigate('/Admin'));
     } else {
       //TODO shuyaoxi
-      axios.get(`/api/surveys/${surveyID}}/`).then((res) => {
+      axios.get(`/api/surveys/${surveyID}/`).then((res) => {
         if (res.status === 200) {
           setTitle(res.data.title);
-          setDescription(res.date.description);
+          setDescription(res.data.description);
         }
       });
     }

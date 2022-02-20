@@ -3,6 +3,7 @@ import TextField from '@mui/material/TextField';
 import Button from '@material-ui/core/Button';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { TokenStorage } from '../../utils';
 
 export default function AdminLogIn() {
   let navigate = useNavigate();
@@ -35,8 +36,8 @@ export default function AdminLogIn() {
       .then((res) => {
         if (res.status === 200 && res.data.access_token) {
           console.log(res);
-          localStorage.setItem('token', res.data.access_token);
-          localStorage.setItem('refreshToken', res.data.refresh_token);
+          TokenStorage.setAccessToken(res.data.access_token);
+          TokenStorage.setRefreshToken(res.data.refresh_token);
           navigate('/template');
         }
       }).catch((error)=>{console.log(error)});
