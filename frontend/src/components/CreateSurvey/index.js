@@ -240,7 +240,7 @@ export default function CreateSurvey(props) {
       });
   }
 
-  function appendQuestion() {
+  function appendQuestion(duplicate=false) {
     let requestContent = {
       number: questions.length + 1 + grouped,
       title: question,
@@ -278,8 +278,9 @@ export default function CreateSurvey(props) {
             id: res.data.id,
           };
           setQuestions(questions.concat(newItem));
-          reset();
-          setNewQuestion(false);
+          if (!duplicate) {
+            reset();
+            setNewQuestion(false);}
         } else {
           //TODO: @shuyaoxie add alert maybe
         }
@@ -664,7 +665,7 @@ export default function CreateSurvey(props) {
                 disabled={options.length === 0}
                 onClick={(e) => {
                   e.preventDefault();
-                  appendQuestion();
+                  appendQuestion(true);
                 }}
               >
                 <ContentCopyIcon />
