@@ -3,8 +3,6 @@ import jwt_decode from "jwt-decode";
 
 const refreshWindow = 30; // try refresh the token 30s before it expires
 
-let refreshRequest = Promise.resolve();
-
 function secondsBeforeExpire(jwt) {
   return jwt_decode(jwt).exp - Date.now() / 1000;
 }
@@ -45,9 +43,11 @@ const TokenStorage = {
   }
 }
 
+let prevGetTokenPromise = Promise.resolve();
+
 function getAccessToken() {
   // wait for previous refresh to finish
-  return refreshRequest.then(() => {
+  const getTokenPromise = prevGetTokenPromise.then(() => {
     const accessToken = TokenStorage.getAccessToken();
     if (accessToken) {
       // check if the access token is about to expire
@@ -60,26 +60,32 @@ function getAccessToken() {
         // check if the refresh token is valid
         if (refreshToken && secondsBeforeExpire(refreshToken) > 0) {
           // refresh the access token
-          refreshRequest = axios.post('/api/auth/token/refresh/', {
-            refresh: refreshToken
-          }).then(res => {
+          return axios.post(
+            '/api/auth/token/refresh/',
+            { refresh: refreshToken },
+            { useJWT: false }
+          ).then(res => {
             TokenStorage.setAccessToken(res.data.access);
             return res.data.access;
           });
-          return refreshRequest;
         } else { // clear tokens if refresh token expired
           TokenStorage.clear()
         }
       }
     }
     return undefined;
+  }).catch(e => {
+    // handle error to not stall the chain
+    console.log('Refresh access token failed with error:', e);
   });
+  prevGetTokenPromise = getTokenPromise;
+  return getTokenPromise;
 }
 
 function registerTokenRefreshInterceptor() {
   axios.interceptors.request.use(config => {
-    // skip all auth endpoints to avoid loops
-    if (config.url.startsWith('/api/auth/')) {
+    // skip requests with useJWT set to false
+    if (config.useJWT === false) {
       return config;
     }
     return getAccessToken().then(accessToken => {
