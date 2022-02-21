@@ -138,7 +138,6 @@ export default function CreateSurvey(props) {
   }
 
   function groupChoices(letter, name, number) {
-    console.log(letter, name, number);
     let groups = [];
     for (let i = 1; i <= number; i++) {
       let v = i.toString();
@@ -150,14 +149,12 @@ export default function CreateSurvey(props) {
         description: `${name} ${v}`,
       });
     }
-    console.log(groups);
     return groups;
   }
 
   function createGroupQuestion() {
     if (!grouped) {
       let groups = groupChoices(letterGroup, groupName, groupNum);
-      console.log(groups);
       axios
         .post(`/api/surveys/${surveyID}/questions/`, {
           number: questions.length + 1,
@@ -167,7 +164,6 @@ export default function CreateSurvey(props) {
           choices: groups,
         })
         .then((res) => {
-          console.log(res);
           if (res.status === 201) setGroupID(res.data.id);
         });
     } else {
@@ -738,7 +734,6 @@ export default function CreateSurvey(props) {
             type="text"
             defaultValue={groupName}
             onBlur={(e) => {
-              console.log(e.target.value);
               setGroupName(e.target.value);
               patchGroupChoices(letterGroup, e.target.value, groupNum);
             }}
