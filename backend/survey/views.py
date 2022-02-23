@@ -1,8 +1,8 @@
-from urllib import request
 from django.db.models import QuerySet
 from rest_framework import viewsets, mixins
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import IsAuthenticatedOrReadOnly 
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.exceptions import ValidationError
 from .models import Survey, SurveyQuestion, SurveySubmission
 from .serializers import (
     SurveySerializer,
@@ -11,12 +11,14 @@ from .serializers import (
     NestedSurveySessionSerializer
 )
 from .models import Survey, SurveyQuestion, SurveySubmission, SurveySession
-from .utils import handle_invalid_hashid
+from .utils import handle_invalid_hashid, query_param_to_bool
 from .permissions import (
     IsParentSurveyOwner,
     CreateOnlyWhenParentSurveyActive
 )
+from .exceptions import BadQueryParameter
 import random
+
 
 class NestedViewMixIn:
     """
@@ -56,12 +58,14 @@ class SurveyViewSet(viewsets.ModelViewSet):
 
     # Field Description
 
-    | Field             | Type     |          | Description                                                                                                                         |
-    | ----------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-    | `id`              | `string` | readonly | The survey's unique id.                                                                                                             |
-    | `title`           | `string` |          | The survey's title.                                                                                                                 |
-    | `description`     | `string` | optional | The survey's description.                                                                                                           |
-    | `created_at`      | `string` | readonly | The survey's creation time in ISO 8601 format.                                                                                      |
+    | Field               | Type     |          | Description                                                                  |
+    | ------------------- | -------- | -------- | ---------------------------------------------------------------------------- |
+    | `id`                | `string` | readonly | The survey's unique id.                                                      |
+    | `title`             | `string` |          | The survey's title.                                                          |
+    | `description`       | `string` | optional | The survey's description.                                                    |
+    | `draft`             | `bool`   | optional | Whether the survey is a draft. Defaults to `true`.                           |
+    | `group_by_question` | `string` | optional | The id of the question that should be used to split submissions into groups. |
+    | `created_at`        | `string` | readonly | The survey's creation time in ISO 8601 format.                               |
 
     # Examples
 
@@ -81,6 +85,8 @@ class SurveyViewSet(viewsets.ModelViewSet):
         "id": "x5zMkQe",
         "title": "Survey Name",
         "description": "A very interesting survey",
+        "draft": true,
+        "group_by_question": null,
         "created_at": "2022-02-14T02:01:16.168116Z"
     }
     ```
@@ -88,8 +94,6 @@ class SurveyViewSet(viewsets.ModelViewSet):
     ## List Surveys
 
     You can list all surveys by `GET /api/surveys/`.  
-
-    > Note: filtering by keyword / name is currently not supported (WIP).  
 
     ``` javascript
     // GET /api/surveys/
@@ -104,12 +108,16 @@ class SurveyViewSet(viewsets.ModelViewSet):
                 "id": "ZL9AOn3",
                 "title": "My First Survey",
                 "description": "123",
+                "draft": true,
+                "group_by_question": null,
                 "created_at": "2022-02-14T02:00:43.454549Z"
             },
             {
                 "id": "x5zMkQe",
                 "title": "Survey Name",
                 "description": "A very interesting survey",
+                "draft": true,
+                "group_by_question": null,
                 "created_at": "2022-02-14T02:01:16.168116Z"
             }
         ]
@@ -133,14 +141,47 @@ class SurveyViewSet(viewsets.ModelViewSet):
                 "id": "13zlXze",
                 "title": "Untitled Survey",
                 "description": "",
+                "draft": true,
+                "group_by_question": null,
                 "created_at": "2022-02-20T23:42:15.569130Z"
             },
             {
                 "id": "vrzkOzD",
                 "title": "Untitled Survey",
                 "description": "",
+                "draft": true,
+                "group_by_question": null,
                 "created_at": "2022-02-20T23:42:50.312421Z"
             }
+        ]
+    }
+    ```
+
+    You can use query parameters `keyword` to limit results to all surveys that
+    have the keyword in their titles.
+
+    ``` javascript
+    // GET /api/surveys/?keyword=abc
+
+    // HTTP 200 OK
+    {
+        // ...
+        "results": [
+            // surveys that have 'abc' in their titles
+        ]
+    }
+    ```
+
+    You can use query parameters `draft` to filter surveys by draft status.
+
+    ``` javascript
+    // GET /api/surveys/?draft=false
+
+    // HTTP 200 OK
+    {
+        // ...
+        "results": [
+            // surveys that have .draft=false
         ]
     }
     ```
@@ -157,6 +198,8 @@ class SurveyViewSet(viewsets.ModelViewSet):
         "id": "x5zMkQe",
         "title": "Survey Name",
         "description": "A very interesting survey",
+        "draft": true,
+        "group_by_question": null,
         "created_at": "2022-02-14T02:01:16.168116Z"
     }
     ```
@@ -178,6 +221,8 @@ class SurveyViewSet(viewsets.ModelViewSet):
         "id": "x5zMkQe",
         "title": "Survey Name",
         "description": "New description",
+        "draft": true,
+        "group_by_question": null,
         "created_at": "2022-02-14T02:01:16.168116Z"
     }
     ```
@@ -196,7 +241,27 @@ class SurveyViewSet(viewsets.ModelViewSet):
     """
     serializer_class = SurveySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
-    queryset = Survey.objects.all()
+
+    def get_queryset(self):
+        queryset = Survey.objects.all()
+
+        # filter by draft status
+        draft = self.request.query_params.get('draft')
+        if draft is not None:
+            draft_bool = query_param_to_bool(draft)
+            if draft_bool is None:
+                raise BadQueryParameter(
+                    "query parameter 'draft' must be either true or false."
+                )
+            queryset = queryset.filter(draft=draft_bool)
+
+        # filter by keywords
+        keyword = self.request.query_params.get('keyword')
+        if keyword is not None:
+            queryset = queryset.filter(title__icontains=keyword)
+
+        return queryset
+
 
 class NestedSurveyQuestionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
     """
@@ -780,7 +845,8 @@ class NestedSurveySessionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
     API endpoint that allows survey sessions to be created or viewed.
     """
     serializer_class = NestedSurveySessionSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly] # we can change this later
+    # we can change this later
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     parent_model_queryset = Survey.objects.all()
     parent_pk_name = 'survey_pk'
@@ -792,7 +858,7 @@ class NestedSurveySessionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
             .filter(survey=self.kwargs['survey_pk'])
 
     def perform_create(self, serializer):
-        code = random.randint(1000,9999)
+        code = random.randint(1000, 9999)
         while SurveySession.objects.filter(code=code).exists():
-            code = random.randint(1000,9999)
+            code = random.randint(1000, 9999)
         serializer.save(code=code)
