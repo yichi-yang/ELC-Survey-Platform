@@ -29,7 +29,8 @@ class SurveySerializer(serializers.ModelSerializer):
         pk_field=HashidSerializerCharField(
             source_field='survey.SurveyQuestion.id'),
         queryset=SurveyQuestion.objects.all(),
-        required=False
+        required=False,
+        allow_null=True
     )
 
     class Meta:
