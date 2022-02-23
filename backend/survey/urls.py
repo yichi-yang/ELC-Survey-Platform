@@ -1,13 +1,9 @@
-from django.template import base
 from django.urls import include, path
 from .views import (
     SurveyViewSet,
     NestedSurveyQuestionViewSet,
-    SurveyQuestionViewSet,
-    SurveySubmissionViewSet,
     NestedSurveySubmissionViewSet,
-    CodeToSurveyViewSet,
-    SurveyToCodeViewSet
+    NestedSurveySessionViewSet
 )
 from rest_framework_nested import routers
 
@@ -16,16 +12,6 @@ router.register(
     r'surveys',
     SurveyViewSet,
     basename='survey'
-)
-router.register(
-    r'questions',
-    SurveyQuestionViewSet,
-    basename='questions'
-)
-router.register(
-    r'submissions',
-    SurveySubmissionViewSet,
-    basename='submissions'
 )
 questions_router = routers.NestedSimpleRouter(
     router,
@@ -37,8 +23,6 @@ questions_router.register(
     NestedSurveyQuestionViewSet,
     basename='survey-questions'
 )
-
-
 submissions_router = routers.NestedSimpleRouter(
     router,
     r'surveys',
@@ -49,11 +33,20 @@ submissions_router.register(
     NestedSurveySubmissionViewSet,
     basename='survey-submissions'
 )
+sessions_router = routers.NestedSimpleRouter(
+    router,
+    r'surveys',
+    lookup='survey'
+)
+sessions_router.register(
+    r'sessions',
+    NestedSurveySessionViewSet,
+    basename='survey-sessions'
+)
 
 urlpatterns = [
     path(r'', include(router.urls)),
     path(r'', include(questions_router.urls)),
     path(r'', include(submissions_router.urls)),
-    path(r'mapping/codes/<int:pk>', CodeToSurveyViewSet.as_view(), name="codes"),
-    path(r'mapping/surveys/<int:pk>', SurveyToCodeViewSet.as_view(), name="surveys"),
+    path(r'', include(sessions_router.urls))
 ]

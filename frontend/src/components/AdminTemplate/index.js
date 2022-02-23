@@ -335,7 +335,9 @@ export default function AdminTemplate(){
       
       <Grid item xs={10}></Grid>
       <Grid item xs={2}>
-      <IconButton color="primary" aria-label="add to shopping cart" href="admin/create_survey">
+
+      <IconButton color="primary" aria-label="add to shopping cart" href='/admin/create_survey'>
+
         <AddCircleOutlineIcon style={{color:'#FFC72C'}} sx={{ fontSize: 80 }}/>
       </IconButton>
       </Grid>

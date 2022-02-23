@@ -27,8 +27,7 @@ class SurveyViewSetTests(TestCase):
             '/api/surveys/',
             {
                 'title': 'test_create_survey',
-                'description': 'only authenticated users can create surveys',
-                'active': True
+                'description': 'only authenticated users can create surveys'
             },
             format='json'
         )
@@ -50,9 +49,8 @@ class SurveyViewSetTests(TestCase):
             {
                 'title': 'test_create_survey',
                 'description': 'only authenticated users can create surveys',
-                'active': True,
-                'start_date_time': None,
-                'end_date_time': None
+                'draft': True,
+                'group_by_question': None
             }
         )
 
@@ -62,17 +60,18 @@ class SurveyViewSetTests(TestCase):
             '/api/surveys/',
             {
                 'title': 'test_create_survey_not_logged_in',
-                'description': "unauthenticated  users can't create surveys",
-                'active': True
+                'description': "unauthenticated  users can't create surveys"
             },
             format='json'
         )
         self.assertEqual(response.status_code, 403)
+
+    def get_survey_id_set(self, data):
+        return set(survey['id'] for survey in data)
 
     def test_list_survey(self):
         """
-        Authenticated users can list their own + other people's active surveys.
-        Unauthenticated users can only list other people's active surveys.
+        Anyone can list surveys.
         """
         user1 = User.objects.create_user('user1')
         user2 = User.objects.create_user('user2')
@@ -83,203 +82,146 @@ class SurveyViewSetTests(TestCase):
         response = self.client.post(
             '/api/surveys/',
             {
-                'title': 'u1_active',
-                'description': "user1's survey (active)",
-                'active': True
+                'title': 'survey 1',
+                'description': "user1's survey 1",
             },
             format='json'
         )
-        u1_active_id = response.data['id']
+        survey1_id = response.data['id']
 
         response = self.client.post(
             '/api/surveys/',
             {
-                'title': 'u1_inactive',
-                'description': "user1's survey (not active)",
-                'active': False
+                'title': 'survey 2',
+                'description': "user1's survey 2",
             },
             format='json'
         )
-        u1_inactive_id = response.data['id']
+        survey2_id = response.data['id']
 
         # user1 should see both surveys
         response = self.client.get('/api/surveys/')
-        u1_get_survey_ids = set(survey['id'] for survey in response.data)
+        u1_get_survey_ids = self.get_survey_id_set(response.data)
 
-        self.assertSetEqual(u1_get_survey_ids, {u1_active_id, u1_inactive_id})
+        self.assertSetEqual(u1_get_survey_ids, {survey1_id, survey2_id})
 
-        # user2 should only see the active one
+        # user2 should see both surveys
         self.client.force_authenticate(user2)
 
         response = self.client.get('/api/surveys/')
-        u1_get_survey_ids = set(survey['id'] for survey in response.data)
+        u2_get_survey_ids = self.get_survey_id_set(response.data)
 
-        self.assertSetEqual(u1_get_survey_ids, {u1_active_id})
+        self.assertSetEqual(u2_get_survey_ids, {survey1_id, survey2_id})
 
-        # unauthenticated user should only see the active one
+        # unauthenticated user should only both surveys
         self.client.force_authenticate()
 
         response = self.client.get('/api/surveys/')
-        u1_get_survey_ids = set(survey['id'] for survey in response.data)
+        unauthenticated_get_survey_ids = set(
+            survey['id'] for survey in response.data)
 
-        self.assertSetEqual(u1_get_survey_ids, {u1_active_id})
+        self.assertSetEqual(unauthenticated_get_survey_ids,
+                            {survey1_id, survey2_id})
 
     def test_fetch_survey(self):
         """
-        Authenticated users can see their own + other people's active surveys.
-        Unauthenticated users can only see other people's active surveys.
+        Anyone can view surveys.
         """
         user1 = User.objects.create_user('user1')
         user2 = User.objects.create_user('user2')
 
-        # user1 creates 2 surveys
+        # user1 creates 1 surveys
         self.client.force_authenticate(user1)
 
         response = self.client.post(
             '/api/surveys/',
             {
-                'title': 'u1_active',
-                'description': "user1's survey (active)",
-                'active': True
+                'title': 'Some survey',
+                'description': "user1's survey",
             },
             format='json'
         )
-        u1_active_id = response.data['id']
-        active_survey_data = response.data
+        survey_id = response.data['id']
+        survey_data = response.data
 
-        response = self.client.post(
-            '/api/surveys/',
-            {
-                'title': 'u1_inactive',
-                'description': "user1's survey (not active)",
-                'active': False
-            },
-            format='json'
-        )
-        u1_inactive_id = response.data['id']
-        inactive_survey_data = response.data
-
-        # user1 should be able to fetch both surveys
-        response = self.client.get(f'/api/surveys/{u1_active_id}/')
+        # user1 should be able to fetch the survey
+        response = self.client.get(f'/api/surveys/{survey_id}/')
         self.assertEqual(response.status_code, 200)
-        self.assertDictEqual(response.data, active_survey_data)
+        self.assertDictEqual(response.data, survey_data)
 
-        response = self.client.get(f'/api/surveys/{u1_inactive_id}/')
-        self.assertEqual(response.status_code, 200)
-        self.assertDictEqual(response.data, inactive_survey_data)
-
-        # user2 should only be able to fetch the active one
+        # user2 should be able to fetch the survey
         self.client.force_authenticate(user2)
 
-        response = self.client.get(f'/api/surveys/{u1_active_id}/')
+        response = self.client.get(f'/api/surveys/{survey_id}/')
         self.assertEqual(response.status_code, 200)
-        self.assertDictEqual(response.data, active_survey_data)
+        self.assertDictEqual(response.data, survey_data)
 
-        response = self.client.get(f'/api/surveys/{u1_inactive_id}/')
-        self.assertEqual(response.status_code, 403)
-
-        # unauthenticated user should only see the active one
+        # unauthenticated user should be able to fetch the survey
         self.client.force_authenticate()
 
-        response = self.client.get(f'/api/surveys/{u1_active_id}/')
+        response = self.client.get(f'/api/surveys/{survey_id}/')
         self.assertEqual(response.status_code, 200)
-        self.assertDictEqual(response.data, active_survey_data)
-
-        response = self.client.get(f'/api/surveys/{u1_inactive_id}/')
-        self.assertEqual(response.status_code, 403)
+        self.assertDictEqual(response.data, survey_data)
 
     def test_update_survey(self):
         """
-        Authenticated users can update their own surveys.
+        Authenticated users can update any survey.
         """
         user1 = User.objects.create_user('user1')
         user2 = User.objects.create_user('user2')
 
-        # user1 creates 2 surveys
+        # user1 creates 1 survey
         self.client.force_authenticate(user1)
 
         response = self.client.post(
             '/api/surveys/',
             {
-                'title': 'u1_active',
-                'description': "user1's survey (active)",
-                'active': True
+                'title': 'Some survey',
+                'description': "user1's survey",
             },
             format='json'
         )
-        u1_active_id = response.data['id']
+        survey_id = response.data['id']
 
-        response = self.client.post(
-            '/api/surveys/',
-            {
-                'title': 'u1_inactive',
-                'description': "user1's survey (not active)",
-                'active': False
-            },
-            format='json'
-        )
-        u1_inactive_id = response.data['id']
-
-        # user1 should be able to update both surveys
+        # user1 should be able to update the survey
         response = self.client.patch(
-            f'/api/surveys/{u1_active_id}/',
-            {'description': "user1's survey (active) updated"},
+            f'/api/surveys/{survey_id}/',
+            {'description': "user1's survey updated"},
             format='json'
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.data['description'],
-            "user1's survey (active) updated"
+            "user1's survey updated"
         )
 
-        response = self.client.patch(
-            f'/api/surveys/{u1_inactive_id}/',
-            {'description': "user1's survey (inactive) updated"},
-            format='json'
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.data['description'],
-            "user1's survey (inactive) updated"
-        )
-
-        # user2 shouldn't be able to update user1's surveys
+        # user2 should also able to update user1's surveys
         self.client.force_authenticate(user2)
 
         response = self.client.patch(
-            f'/api/surveys/{u1_active_id}/',
-            {'description': "should not work"},
+            f'/api/surveys/{survey_id}/',
+            {'description': "updated by user 2"},
             format='json'
         )
-        self.assertEqual(response.status_code, 403)
-
-        response = self.client.patch(
-            f'/api/surveys/{u1_inactive_id}/',
-            {'description': "should not work"},
-            format='json'
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data['description'],
+            "updated by user 2"
         )
-        self.assertEqual(response.status_code, 403)
 
         # unauthenticated user shouldn't be able to update user1's surveys
         self.client.force_authenticate()
 
         response = self.client.patch(
-            f'/api/surveys/{u1_active_id}/',
-            {'description': "should not work"},
-            format='json'
-        )
-        self.assertEqual(response.status_code, 403)
-
-        response = self.client.patch(
-            f'/api/surveys/{u1_inactive_id}/',
-            {'description': "should not work"},
+            f'/api/surveys/{survey_id}/',
+            {'description': "this doesn't work"},
             format='json'
         )
         self.assertEqual(response.status_code, 403)
 
     def test_delete_survey(self):
         """
-        Authenticated users can delete their own surveys.
+        Authenticated users can delete any survey.
         """
         user1 = User.objects.create_user('user1')
         user2 = User.objects.create_user('user2')
@@ -290,73 +232,187 @@ class SurveyViewSetTests(TestCase):
         response = self.client.post(
             '/api/surveys/',
             {
-                'title': 'u1_active',
-                'description': "user1's survey (active)",
-                'active': True
+                'title': 'survey 1',
+                'description': "blah blah blah"
             },
             format='json'
         )
-        u1_active_id = response.data['id']
+        survey1_id = response.data['id']
 
         response = self.client.post(
             '/api/surveys/',
             {
-                'title': 'u1_inactive',
-                'description': "user1's survey (not active)",
-                'active': False
+                'title': 'survey 2',
+                'description': "blah blah blah"
             },
             format='json'
         )
-        u1_inactive_id = response.data['id']
+        survey2_id = response.data['id']
 
-        # user2 shouldn't be able to delete user1's surveys
+        # user2 should be able to delete user1's surveys
         self.client.force_authenticate(user2)
 
-        response = self.client.delete(f'/api/surveys/{u1_active_id}/')
-        self.assertEqual(response.status_code, 403)
-
-        response = self.client.delete(f'/api/surveys/{u1_inactive_id}/')
-        self.assertEqual(response.status_code, 403)
+        response = self.client.delete(f'/api/surveys/{survey1_id}/')
+        self.assertEqual(response.status_code, 204)
 
         # unauthenticated user shouldn't be able to delete user1's surveys
         self.client.force_authenticate()
 
-        response = self.client.delete(f'/api/surveys/{u1_active_id}/')
+        response = self.client.delete(f'/api/surveys/{survey2_id}/')
         self.assertEqual(response.status_code, 403)
 
-        response = self.client.delete(f'/api/surveys/{u1_inactive_id}/')
-        self.assertEqual(response.status_code, 403)
-
-        # user1 should be able to delete both surveys
+        # user1 should be able to delete the survey
         self.client.force_authenticate(user1)
 
-        response = self.client.delete(f'/api/surveys/{u1_active_id}/')
+        response = self.client.delete(f'/api/surveys/{survey2_id}/')
         self.assertEqual(response.status_code, 204)
 
-        response = self.client.delete(f'/api/surveys/{u1_inactive_id}/')
-        self.assertEqual(response.status_code, 204)
+    def test_set_group_question(self):
+        """
+        You can update group by question after a survey is created.
+        """
+        user = User.objects.create_user('user')
+
+        survey = Survey(
+            title='test survey',
+            description='test description'
+        )
+        survey.save()
+        mc_question = SurveyQuestion(
+            number=1,
+            title='test question',
+            type='MC',
+            required=False,
+            survey=survey
+        )
+        mc_question.save()
+
+        self.client.force_authenticate(user)
+
+        response = self.client.get(f'/api/surveys/{survey.id}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['group_by_question'], None)
+
+        response = self.client.patch(
+            f'/api/surveys/{survey.id}/',
+            {'group_by_question': str(mc_question.id)},
+            format='json'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data['group_by_question'], str(mc_question.id)
+        )
+
+        # group_by_question must be a multiple choice or dropdown question
+
+        sa_question = SurveyQuestion(
+            number=1,
+            title='test question SA',
+            type='SA',
+            required=False,
+            survey=survey
+        )
+        sa_question.save()
+
+        response = self.client.patch(
+            f'/api/surveys/{survey.id}/',
+            {'group_by_question': str(sa_question.id)},
+            format='json'
+        )
+        self.assertEqual(response.status_code, 400)
+
+        # you shouldn't be able to mix and match question / survey
+        another_survey = Survey(
+            title='test survey',
+            description='test description'
+        )
+        another_survey.save()
+        another_question = SurveyQuestion(
+            number=1,
+            title='test question',
+            type='MC',
+            required=False,
+            survey=another_survey
+        )
+        another_question.save()
+
+        response = self.client.patch(
+            f'/api/surveys/{survey.id}/',
+            {'group_by_question': str(another_question.id)},
+            format='json'
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_list_survey_filter(self):
+        """
+        You can filter surveys using draft and keywork query parameter.
+        """
+        survey1 = Survey(
+            title='apple survey',
+            description='test description',
+            draft=True
+        )
+        survey1.save()
+
+        survey2 = Survey(
+            title='banana survey',
+            description='test description',
+            draft=False
+        )
+        survey2.save()
+
+        # no filters
+        response = self.client.get(f'/api/surveys/')
+        self.assertEqual(response.status_code, 200)
+        self.assertSetEqual(
+            self.get_survey_id_set(response.data),
+            {survey1.id, survey2.id}
+        )
+
+        # filter by draft
+        response = self.client.get(f'/api/surveys/?draft=true')
+        self.assertEqual(response.status_code, 200)
+        self.assertSetEqual(
+            self.get_survey_id_set(response.data), {survey1.id}
+        )
+
+        response = self.client.get(f'/api/surveys/?draft=false')
+        self.assertEqual(response.status_code, 200)
+        self.assertSetEqual(
+            self.get_survey_id_set(response.data), {survey2.id}
+        )
+
+        # no filter by keyword
+        response = self.client.get(f'/api/surveys/?keyword=apple')
+        self.assertEqual(response.status_code, 200)
+        self.assertSetEqual(
+            self.get_survey_id_set(response.data), {survey1.id}
+        )
+
+        response = self.client.get(f'/api/surveys/?keyword=banana')
+        self.assertEqual(response.status_code, 200)
+        self.assertSetEqual(
+            self.get_survey_id_set(response.data), {survey2.id}
+        )
+
+        # you can also combine both query parameters
+        response = self.client.get(f'/api/surveys/?draft=true&keyword=banana')
+        self.assertEqual(response.status_code, 200)
+        self.assertSetEqual(
+            self.get_survey_id_set(response.data), set()
+        )
 
 
 class SurveyQuestionViewSetTests(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.owner = User.objects.create_user('some user')
-        self.not_owner = User.objects.create_user('some other user')
-        self.inactive_survey = Survey(
-            title='test active',
-            description='test description',
-            active=False,
-            owner=self.owner
+        self.user = User.objects.create_user('some user')
+        self.survey = Survey(
+            title='test survey',
+            description='test description'
         )
-        self.inactive_survey.save()
-        self.active_survey = Survey(
-            title='test inactive',
-            description='test description',
-            active=True,
-            owner=self.owner
-        )
-        self.active_survey.save()
+        self.survey.save()
 
     def tearDown(self):
         # clean up survey and user objects after each test
@@ -365,14 +421,14 @@ class SurveyQuestionViewSetTests(TestCase):
         User.objects.all().delete()
 
     def test_create_multiple_choice_question(self):
-        """ the owner can add a multiple choice question to the survey """
+        """ authenticated users can add a multiple choice question to the survey """
 
         # log the user in
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # multiple choice question
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             {
                 "number": 1,
                 "title": "Which is better?",
@@ -431,14 +487,14 @@ class SurveyQuestionViewSetTests(TestCase):
         )
 
     def test_create_checkboxes_question(self):
-        """ the owner can add a checkboxes question to the survey """
+        """ authenticated users can add a checkboxes question to the survey """
 
         # log the user in
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # checkboxes question
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             {
                 "number": 2,
                 "title": "Select all valid statements.",
@@ -500,14 +556,14 @@ class SurveyQuestionViewSetTests(TestCase):
         )
 
     def test_create_dropdown_question(self):
-        """ the owner can add a dropdown question to the survey """
+        """ authenticated users can add a dropdown question to the survey """
 
         # log the user in
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # dropdown question
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             {
                 "number": 3,
                 "title": "Which breakout room are you in?",
@@ -575,14 +631,14 @@ class SurveyQuestionViewSetTests(TestCase):
         )
 
     def test_create_scale_question(self):
-        """ the owner can add a scale question to the survey """
+        """ authenticated users can add a scale question to the survey """
 
         # log the user in
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # scale question
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             {
                 "number": 4,
                 "title": "From 1 to 10, how's your day going?",
@@ -631,14 +687,14 @@ class SurveyQuestionViewSetTests(TestCase):
         )
 
     def test_create_short_answer_question(self):
-        """ the owner can add a short answer question to the survey """
+        """ authenticated users can add a short answer question to the survey """
 
         # log the user in
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # short answer question
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             {
                 "number": 5,
                 "title": "What is your favorite fruit?",
@@ -675,14 +731,14 @@ class SurveyQuestionViewSetTests(TestCase):
         )
 
     def test_create_paragraph_question(self):
-        """ the owner can add a paragraph question to the survey """
+        """ authenticated users can add a paragraph question to the survey """
 
         # log the user in
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # paragraph question
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             {
                 "number": 6,
                 "title": "Describe the city you live in.",
@@ -718,15 +774,96 @@ class SurveyQuestionViewSetTests(TestCase):
             }
         )
 
+    def test_create_ranking_question(self):
+        """ authenticated users can add a ranking question to the survey """
+
+        # log the user in
+        self.client.force_authenticate(self.user)
+
+        # multiple choice question
+        response = self.client.post(
+            f'/api/surveys/{self.survey.id}/questions/',
+            {
+                "number": 7,
+                "title": "Please rank the following roles:",
+                "required": True,
+                "type": "RK",
+                "range_min": 1.0,  # rank between 1 .. 7 in 1 point increments
+                "range_max": 7.0,
+                "range_default": 1.0,  # defaults to 1
+                "range_step": 1.0,
+                "choices": [
+                    {"value": "A", "description": "CEO"},
+                    {"value": "B", "description": "CFO"},
+                    {"value": "C", "description": "COO"}
+                ]
+            },
+            format='json'
+        )
+        self.assertEqual(response.status_code, 201)
+
+        # response should look like:
+        # {
+        #     "id": "<unique id>",
+        #     "number": 1,
+        #     "title": "Which is better?",
+        #     "required": True,
+        #     "type": "RK",
+        #     "range_min": 1.0,
+        #     "range_max": 7.0,
+        #     "range_default": 1.0,
+        #     "range_step": 1.0,
+        #     "choices": [
+        #         {"id": "<unique id>", "value": "A", "description": "CEO"},
+        #         {"id": "<unique id>", "value": "B", "description": "CFO"},
+        #         {"id": "<unique id>", "value": "C", "description": "COO"}
+        #     ]
+        # },
+
+        # response will include question.id which we
+        # don't know when we create the question
+        question_data = response.data
+        question_id = question_data.pop('id')
+        self.assertTrue(SurveyQuestion.objects.filter(pk=question_id).exists())
+        # also question.choices will have individual ids
+        choices = question_data.pop('choices')
+        for choice in choices:
+            self.assertTrue(
+                SurveyQuestionChoice.objects.filter(pk=choice.pop('id'))
+                .exists()
+            )
+        # other than the ids, the response should look the same
+        self.assertListEqual(
+            choices,
+            [
+                {"value": "A", "description": "CEO"},
+                {"value": "B", "description": "CFO"},
+                {"value": "C", "description": "COO"}
+            ]
+        )
+        self.assertDictEqual(
+            question_data,
+            {
+                "number": 7,
+                "title": "Please rank the following roles:",
+                "required": True,
+                "type": "RK",
+                "range_min": 1.0,
+                "range_max": 7.0,
+                "range_default": 1.0,
+                "range_step": 1.0,
+            }
+        )
+
     def test_create_multiple_choice_question_no_choices(self):
         """ multiple choice questions must have choices """
 
         # log the user in
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # multiple choice question
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             {
                 "number": 1,
                 "title": "Which is better?",
@@ -745,11 +882,11 @@ class SurveyQuestionViewSetTests(TestCase):
         """ checkboxes question must have choices """
 
         # log the user in
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # checkboxes question
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             {
                 "number": 2,
                 "title": "Select all valid statements.",
@@ -769,11 +906,11 @@ class SurveyQuestionViewSetTests(TestCase):
         """ dropdown questions must have choices """
 
         # log the user in
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # dropdown question
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             {
                 "number": 3,
                 "title": "Which breakout room are you in?",
@@ -795,11 +932,11 @@ class SurveyQuestionViewSetTests(TestCase):
         """ scale question must have min, max, default and step """
 
         # log the user in
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # scale question
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             {
                 "number": 4,
                 "title": "From 1 to 10, how's your day going?",
@@ -818,11 +955,11 @@ class SurveyQuestionViewSetTests(TestCase):
         """ checkboxes question must have choices """
 
         # log the user in
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # checkboxes question
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             {
                 "number": 2,
                 "title": "Select all valid statements.",
@@ -839,8 +976,7 @@ class SurveyQuestionViewSetTests(TestCase):
 
     def test_create_question_permissions(self):
         """
-        only the owner of the survey can add questions to that survey
-        (whether the survey is active doesn't matter)
+        authenticated users can add questions to a survey
         """
 
         question_data = {
@@ -850,52 +986,21 @@ class SurveyQuestionViewSetTests(TestCase):
             "type": "SA"
         }
 
-        # owner can add questions
-        self.client.force_authenticate(self.owner)
+        # authenticated users can add questions
+        self.client.force_authenticate(self.user)
 
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             question_data,
             format='json'
         )
         self.assertEqual(response.status_code, 201)
-
-        response = self.client.post(
-            f'/api/surveys/{self.active_survey.id}/questions/',
-            question_data,
-            format='json'
-        )
-        self.assertEqual(response.status_code, 201)
-
-        # others can't add questions
-        self.client.force_authenticate(self.not_owner)
-
-        response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
-            question_data,
-            format='json'
-        )
-        self.assertEqual(response.status_code, 403)
-
-        response = self.client.post(
-            f'/api/surveys/{self.active_survey.id}/questions/',
-            question_data,
-            format='json'
-        )
-        self.assertEqual(response.status_code, 403)
 
         # unauthenticated users can't add questions
         self.client.force_authenticate()
 
         response = self.client.post(
-            f'/api/surveys/{self.inactive_survey.id}/questions/',
-            question_data,
-            format='json'
-        )
-        self.assertEqual(response.status_code, 403)
-
-        response = self.client.post(
-            f'/api/surveys/{self.active_survey.id}/questions/',
+            f'/api/surveys/{self.survey.id}/questions/',
             question_data,
             format='json'
         )
@@ -906,11 +1011,11 @@ class SurveyQuestionViewSetTests(TestCase):
         GET /surveys/<id>/questions/ lists all questions of that survey
         """
 
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # the survey doesn't have any question yet
         response = self.client.get(
-            f'/api/surveys/{self.inactive_survey.id}/questions/'
+            f'/api/surveys/{self.survey.id}/questions/'
         )
         self.assertEqual(response.status_code, 200)
         self.assertListEqual([], response.data)
@@ -931,59 +1036,35 @@ class SurveyQuestionViewSetTests(TestCase):
             }
         ]
         for question in questions:
-            instance = SurveyQuestion(survey=self.inactive_survey, **question)
+            instance = SurveyQuestion(survey=self.survey, **question)
             instance.save()
             question['id'] = instance.id  # save the id
 
         # now listing the questions should show the 2 new questions
         response = self.client.get(
-            f'/api/surveys/{self.inactive_survey.id}/questions/'
+            f'/api/surveys/{self.survey.id}/questions/'
         )
         self.assertEqual(response.status_code, 200)
         self.assertListEqual(questions, response.data)
 
     def test_list_question_permissions(self):
         """
-        owner of the survey can list questions,
-        others can list survey questions when the survey is active
+        anyone can list questions,
         """
 
-        # owner can always list questions
-        self.client.force_authenticate(self.owner)
+        # authenticated users can always list questions
+        self.client.force_authenticate(self.user)
 
         response = self.client.get(
-            f'/api/surveys/{self.inactive_survey.id}/questions/'
+            f'/api/surveys/{self.survey.id}/questions/'
         )
         self.assertEqual(response.status_code, 200)
 
-        response = self.client.get(
-            f'/api/surveys/{self.active_survey.id}/questions/'
-        )
-        self.assertEqual(response.status_code, 200)
-
-        # other users can list questions of active surveys
-        self.client.force_authenticate(self.not_owner)
-
-        response = self.client.get(
-            f'/api/surveys/{self.inactive_survey.id}/questions/'
-        )
-        self.assertEqual(response.status_code, 403)
-
-        response = self.client.get(
-            f'/api/surveys/{self.active_survey.id}/questions/'
-        )
-        self.assertEqual(response.status_code, 200)
-
-        # unauthenticated users can list questions of active surveys
+        # unauthenticated users can also list questions
         self.client.force_authenticate()
 
         response = self.client.get(
-            f'/api/surveys/{self.inactive_survey.id}/questions/'
-        )
-        self.assertEqual(response.status_code, 403)
-
-        response = self.client.get(
-            f'/api/surveys/{self.active_survey.id}/questions/'
+            f'/api/surveys/{self.survey.id}/questions/'
         )
         self.assertEqual(response.status_code, 200)
 
@@ -992,7 +1073,7 @@ class SurveyQuestionViewSetTests(TestCase):
         GET /surveys/<survey_id>/questions/<question_id>/ return the question
         """
 
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         question_data = {
             'number': 1,
@@ -1002,24 +1083,23 @@ class SurveyQuestionViewSetTests(TestCase):
         }
 
         # create a questions
-        instance = SurveyQuestion(survey=self.inactive_survey, **question_data)
+        instance = SurveyQuestion(survey=self.survey, **question_data)
         instance.save()
         question_data['id'] = instance.id  # save the id
 
         # now fetch the question should return the new question
         response = self.client.get(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{instance.id }/'
+            f'/api/surveys/{self.survey.id}/questions/{instance.id }/'
         )
         self.assertEqual(response.status_code, 200)
         self.assertDictEqual(question_data, response.data)
 
     def test_fetch_question_permissions(self):
         """
-        owner of the survey can fetch questions,
-        others can fetch survey questions when the survey is active
+        Anyone can fetch questions.
         """
 
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         question_data = {
             'number': 1,
@@ -1029,48 +1109,20 @@ class SurveyQuestionViewSetTests(TestCase):
         }
 
         # create questions
-        inactive_instance = SurveyQuestion(
-            survey=self.inactive_survey, **question_data)
-        inactive_instance.save()
+        question = SurveyQuestion(survey=self.survey, **question_data)
+        question.save()
 
-        active_instance = SurveyQuestion(
-            survey=self.active_survey, **question_data)
-        active_instance.save()
-
-        # owner can always list questions
+        # authenticated users can always list questions
         response = self.client.get(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{inactive_instance.id}/'
+            f'/api/surveys/{self.survey.id}/questions/{question.id}/'
         )
         self.assertEqual(response.status_code, 200)
 
-        response = self.client.get(
-            f'/api/surveys/{self.active_survey.id}/questions/{active_instance.id}/'
-        )
-        self.assertEqual(response.status_code, 200)
-
-        # other users can list questions of active surveys
-        self.client.force_authenticate(self.not_owner)
-
-        response = self.client.get(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{inactive_instance.id}/'
-        )
-        self.assertEqual(response.status_code, 403)
-
-        response = self.client.get(
-            f'/api/surveys/{self.active_survey.id}/questions/{active_instance.id}/'
-        )
-        self.assertEqual(response.status_code, 200)
-
-        # unauthenticated users can list questions of active surveys
+        # unauthenticated users can list questions too
         self.client.force_authenticate()
 
         response = self.client.get(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{inactive_instance.id}/'
-        )
-        self.assertEqual(response.status_code, 403)
-
-        response = self.client.get(
-            f'/api/surveys/{self.active_survey.id}/questions/{active_instance.id}/'
+            f'/api/surveys/{self.survey.id}/questions/{question.id}/'
         )
         self.assertEqual(response.status_code, 200)
 
@@ -1079,7 +1131,7 @@ class SurveyQuestionViewSetTests(TestCase):
         PUT or PATCH /surveys/<survey_id>/questions/<question_id>/ edits the question 
         """
 
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         question_data = {
             'number': 1,
@@ -1089,13 +1141,13 @@ class SurveyQuestionViewSetTests(TestCase):
         }
 
         # create a question
-        instance = SurveyQuestion(survey=self.inactive_survey, **question_data)
+        instance = SurveyQuestion(survey=self.survey, **question_data)
         instance.save()
         question_data['id'] = instance.id  # save the id
 
         # now fetch the question should return the new question
         response = self.client.patch(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{instance.id }/',
+            f'/api/surveys/{self.survey.id}/questions/{instance.id }/',
             {
                 'number': 42,
                 'title': 'changed',
@@ -1119,11 +1171,11 @@ class SurveyQuestionViewSetTests(TestCase):
         used to edit question choices
         """
 
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # create a multiple choice question
         question = SurveyQuestion(
-            survey=self.inactive_survey,
+            survey=self.survey,
             number=100,
             title='1 + 1 = ?',
             type='MC',
@@ -1159,7 +1211,7 @@ class SurveyQuestionViewSetTests(TestCase):
 
         # now fetch the question should return the new question
         response = self.client.patch(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{question.id}/',
+            f'/api/surveys/{self.survey.id}/questions/{question.id}/',
             {
                 'choices': [
                     # If you want to keep/update an existing choice, be
@@ -1212,10 +1264,10 @@ class SurveyQuestionViewSetTests(TestCase):
 
     def test_update_question_permissions(self):
         """
-        only owner of the survey can update questions
+        only authenticated users can update questions
         """
 
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         question_data = {
             'number': 1,
@@ -1225,65 +1277,24 @@ class SurveyQuestionViewSetTests(TestCase):
         }
 
         # create questions
-        inactive_question = SurveyQuestion(survey=self.inactive_survey, **question_data)
-        inactive_question.save()
-        active_question = SurveyQuestion(survey=self.active_survey, **question_data)
-        active_question.save()
+        question = SurveyQuestion(survey=self.survey, **question_data)
+        question.save()
 
-        # owner of the survey can update questions
+        # authenticated users can update questions
         response = self.client.patch(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{inactive_question.id}/',
+            f'/api/surveys/{self.survey.id}/questions/{question.id}/',
             {
                 'title': 'changed',
             },
             format='json'
         )
         self.assertEqual(response.status_code, 200)
-
-        response = self.client.patch(
-            f'/api/surveys/{self.active_survey.id}/questions/{active_question.id}/',
-            {
-                'title': 'changed',
-            },
-            format='json'
-        )
-        self.assertEqual(response.status_code, 200)
-
-        # other users can't update questions
-        self.client.force_authenticate(self.not_owner)
-
-        response = self.client.patch(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{inactive_question.id}/',
-            {
-                'title': 'changed',
-            },
-            format='json'
-        )
-        self.assertEqual(response.status_code, 403)
-
-        response = self.client.patch(
-            f'/api/surveys/{self.active_survey.id}/questions/{active_question.id}/',
-            {
-                'title': 'changed',
-            },
-            format='json'
-        )
-        self.assertEqual(response.status_code, 403)
 
         # unauthenticated users can't update questions
         self.client.force_authenticate()
 
         response = self.client.patch(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{inactive_question.id}/',
-            {
-                'title': 'changed',
-            },
-            format='json'
-        )
-        self.assertEqual(response.status_code, 403)
-
-        response = self.client.patch(
-            f'/api/surveys/{self.active_survey.id}/questions/{active_question.id}/',
+            f'/api/surveys/{self.survey.id}/questions/{question.id}/',
             {
                 'title': 'changed',
             },
@@ -1296,7 +1307,7 @@ class SurveyQuestionViewSetTests(TestCase):
         DELETE /surveys/<survey_id>/questions/<question_id>/ removes a question
         """
 
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # create a question
         question_data = {
@@ -1307,27 +1318,29 @@ class SurveyQuestionViewSetTests(TestCase):
         }
 
         # create questions
-        instance = SurveyQuestion(survey=self.inactive_survey, **question_data)
+        instance = SurveyQuestion(survey=self.survey, **question_data)
         instance.save()
 
         self.assertTrue(SurveyQuestion.objects.filter(pk=instance.id).exists())
 
         # now delete the question
         response = self.client.delete(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{instance.id}/'
+            f'/api/surveys/{self.survey.id}/questions/{instance.id}/'
         )
 
         self.assertEqual(response.status_code, 204)
-        
+
         # make sure it's deleted
-        self.assertFalse(SurveyQuestionChoice.objects.filter(pk=instance.id).exists())
+        self.assertFalse(
+            SurveyQuestionChoice.objects.filter(pk=instance.id).exists()
+        )
 
     def test_delete_question_permissions(self):
         """
-        only owner of the survey can delete questions
+        only authenticated users can delete questions
         """
 
-        self.client.force_authenticate(self.owner)
+        self.client.force_authenticate(self.user)
 
         # create a question
         question_data = {
@@ -1338,46 +1351,21 @@ class SurveyQuestionViewSetTests(TestCase):
         }
 
         # create questions
-        inactive_question = SurveyQuestion(survey=self.inactive_survey, **question_data)
-        inactive_question.save()
-        active_question = SurveyQuestion(survey=self.active_survey, **question_data)
-        active_question.save()
+        question = SurveyQuestion(survey=self.survey, **question_data)
+        question.save()
 
         # unauthenticated users can't delete questions
         self.client.force_authenticate()
-        
+
         response = self.client.delete(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{inactive_question.id}/'
+            f'/api/surveys/{self.survey.id}/questions/{question.id}/'
         )
         self.assertEqual(response.status_code, 403)
 
-        response = self.client.delete(
-            f'/api/surveys/{self.active_survey.id}/questions/{active_question.id}/'
-        )
-        self.assertEqual(response.status_code, 403)
-        
-        # other users can't delete questions
-        self.client.force_authenticate(self.not_owner)
-        
-        response = self.client.delete(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{inactive_question.id}/'
-        )
-        self.assertEqual(response.status_code, 403)
+        # authenticated users can delete questions
+        self.client.force_authenticate(self.user)
 
         response = self.client.delete(
-            f'/api/surveys/{self.active_survey.id}/questions/{active_question.id}/'
-        )
-        self.assertEqual(response.status_code, 403)
-
-        # owner of the survey can delete questions
-        self.client.force_authenticate(self.owner)
-        
-        response = self.client.delete(
-            f'/api/surveys/{self.inactive_survey.id}/questions/{inactive_question.id}/'
-        )
-        self.assertEqual(response.status_code, 204)
-
-        response = self.client.delete(
-            f'/api/surveys/{self.active_survey.id}/questions/{active_question.id}/'
+            f'/api/surveys/{self.survey.id}/questions/{question.id}/'
         )
         self.assertEqual(response.status_code, 204)

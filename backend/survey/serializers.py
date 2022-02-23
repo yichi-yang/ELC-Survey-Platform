@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from hashid_field.rest import HashidSerializerCharField
 from django.utils.translation import gettext_lazy as _
-from .models import Survey, SurveyQuestion, SurveyQuestionChoice, SurveyResponse, SurveySubmission, Survey, SurveyCode
+from .models import (Survey, SurveyQuestion, SurveyQuestionChoice,
+                     SurveyResponse, SurveySubmission, Survey, SurveySession)
 from .validators import OwnedByRequestUser
 
 
@@ -24,12 +25,34 @@ class SurveySerializer(serializers.ModelSerializer):
         source_field='survey.Survey.id',
         read_only=True
     )
-    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    group_by_question = serializers.PrimaryKeyRelatedField(
+        pk_field=HashidSerializerCharField(
+            source_field='survey.SurveyQuestion.id'),
+        queryset=SurveyQuestion.objects.all(),
+        required=False
+    )
 
     class Meta:
         model = Survey
-        fields = ['id', 'owner', 'title', 'description', 'created_at',
-                  'active', 'start_date_time', 'end_date_time']
+        fields = ['id', 'title', 'description',
+                  'draft', 'group_by_question', 'created_at']
+
+    def validate_group_by_question(self, question):
+        """
+        Check that the question belongs to current survey.
+        """
+        if question.survey != self.instance:
+            raise serializers.ValidationError(
+                "group_by_question doesn't belong to this survey"
+            )
+        if question.type not in [
+            SurveyQuestion.QuestionType.MULTICHOICE.value,
+            SurveyQuestion.QuestionType.DROPDOWN.value
+        ]:
+            raise serializers.ValidationError(
+                "group_by_question must be a multiple choice or dropdown question"
+            )
+        return question
 
 
 class NestedSurveyQuestionChoiceSerializer(serializers.ModelSerializer):
@@ -56,16 +79,30 @@ class NestedSurveyQuestionSerializer(serializers.ModelSerializer):
     )
     choices = NestedSurveyQuestionChoiceSerializer(many=True, required=False)
 
+    # some fields are only required by certain question types
     conditional_fields = {
         'choices': [
             SurveyQuestion.QuestionType.MULTICHOICE,
             SurveyQuestion.QuestionType.CHECKBOXES,
-            SurveyQuestion.QuestionType.DROPDOWN
+            SurveyQuestion.QuestionType.DROPDOWN,
+            SurveyQuestion.QuestionType.RANKING,
         ],
-        'range_min': [SurveyQuestion.QuestionType.SCALE],
-        'range_max': [SurveyQuestion.QuestionType.SCALE],
-        'range_default': [SurveyQuestion.QuestionType.SCALE],
-        'range_step': [SurveyQuestion.QuestionType.SCALE]
+        'range_min': [
+            SurveyQuestion.QuestionType.SCALE,
+            SurveyQuestion.QuestionType.RANKING,
+        ],
+        'range_max': [
+            SurveyQuestion.QuestionType.SCALE,
+            SurveyQuestion.QuestionType.RANKING,
+        ],
+        'range_default': [
+            SurveyQuestion.QuestionType.SCALE,
+            SurveyQuestion.QuestionType.RANKING,
+        ],
+        'range_step': [
+            SurveyQuestion.QuestionType.SCALE,
+            SurveyQuestion.QuestionType.RANKING,
+        ]
     }
 
     class Meta:
@@ -84,15 +121,16 @@ class NestedSurveyQuestionSerializer(serializers.ModelSerializer):
         """
         Check if required fields exist based on question types.
         """
+        # check required fields exists
         instance_question_type = self.instance.type if self.instance else None
         question_type = data.get('type', instance_question_type)
-        for field, type_list in self.conditional_fields.items():
+        for field, required_by_type in self.conditional_fields.items():
             field_data = data.get(field, None)
-            if question_type in type_list and field_data is None:
+            if question_type in required_by_type and field_data is None:
                 raise serializers.ValidationError(
                     {field: f'{field!r} is required for question type {question_type!r}'}
                 )
-            elif question_type not in type_list and field_data is not None:
+            elif question_type not in required_by_type and field_data is not None:
                 raise serializers.ValidationError(
                     {field: f'{field!r} is redundant for question type {question_type!r}'}
                 )
@@ -167,16 +205,6 @@ class NestedSurveyQuestionSerializer(serializers.ModelSerializer):
         super().update(instance, validated_data)
 
         return instance
-
-
-class SurveyQuestionSerializer(NestedSurveyQuestionSerializer):
-    survey = serializers.PrimaryKeyRelatedField(
-        pk_field=HashidSerializerCharField(source_field='survey.Survey.id'),
-        queryset=Survey.objects.all()
-    )
-
-    class Meta(NestedSurveyQuestionSerializer.Meta):
-        pass
 
 
 class NestedSurveyResponseSerializer(serializers.ModelSerializer):
@@ -340,21 +368,19 @@ class NestedSurveySubmissionSerializer(serializers.ModelSerializer):
         raise NotImplementedError('Updating a submission is not supported.')
 
 
-class SurveySubmissionSerializer(NestedSurveySubmissionSerializer):
+class NestedSurveySessionSerializer(serializers.ModelSerializer):
+    id = HashidSerializerCharField(
+        source_field='survey.Survey.id',
+        read_only=True
+    )
     survey = serializers.PrimaryKeyRelatedField(
         pk_field=HashidSerializerCharField(source_field='survey.Survey.id'),
         queryset=Survey.objects.all()
     )
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    code = serializers.IntegerField(allow_null=True)
 
-    class Meta(NestedSurveySubmissionSerializer.Meta):
-        pass
-
-class SurveyCodeSerializer(serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField(read_only=True)
-    survey = serializers.PrimaryKeyRelatedField(
-        pk_field=HashidSerializerCharField(source_field='survey.Survey.id'),
-        queryset=Survey.objects.all()
-    )
     class Meta:
-        model = SurveyCode
-        fields = ['id', 'survey']
+        model = SurveySession
+        fields = ['id', 'code', 'survey', 'owner']
+        read_only_fields = ('survey', 'owner', 'code')

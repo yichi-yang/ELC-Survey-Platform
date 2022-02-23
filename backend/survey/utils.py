@@ -31,3 +31,14 @@ def handle_invalid_hashid(resource_name=None):
                     raise e
         return wrapper
     return decorator
+
+def query_param_to_bool(s):
+    """
+    Returns True if s.lower() == 'true' and returns false if s.lower() == 'false'.
+    Otherwise None is returned.
+    """
+    if s.lower() == 'true':
+        return True
+    elif s.lower() == 'false':
+        return False
+    return None

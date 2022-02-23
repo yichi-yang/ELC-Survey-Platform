@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import MenuItem from '@mui/material/MenuItem';
-import FormHelperText from '@mui/material/FormHelperText';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -14,9 +13,13 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import SquareIcon from '@mui/icons-material/Square';
 import Switch from '@mui/material/Switch';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import Alert from './Alert';
+import { TextField } from '@mui/material';
 
 export default function CreateSurvey(props) {
   const navigate = useNavigate();
+
   const headingStyle = {
     height: '15vh',
     width: '100vw',
@@ -57,7 +60,7 @@ export default function CreateSurvey(props) {
 
   const addQuestion = {
     backgroundColor: '#FFC72C',
-    width: '60vw',
+    width: '100%',
     textAlign: 'center',
     color: 'white',
     marginTop: '5vh',
@@ -74,9 +77,14 @@ export default function CreateSurvey(props) {
 
   const [shouldRender, setUpdate] = useState(false);
 
-  const types = ['Multiple Choice', 'Selection', 'Short Answer'];
+  const types = ['MC', 'CB', 'SA'];
+  function typeConverter(type) {
+    for (let i = 0; i < types.length; i++) {
+      if (types[i] === type) return i;
+    }
+  }
 
-  const [title, setTitle] = useState('Untitled Survey');
+  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [questions, setQuestions] = useState([]);
 
@@ -88,14 +96,19 @@ export default function CreateSurvey(props) {
 
   const [required, setRequired] = useState(false);
 
-  const [groupNum, setGroupNum] = useState(1);
+  const [groupNum, setGroupNum] = useState(undefined);
 
-  const [groupName, setGroupName] = useState('Groups');
+  const [groupName, setGroupName] = useState('');
 
   const [grouped, setGrouped] = useState(false);
 
+  const [groupID, setGroupID] = useState(null);
+
   const [letterGroup, setLetterGroup] = useState(false);
 
+  const [cancelAlertOpen, setCancelAlertOpen] = useState(false);
+
+  const [createAlertOpen, setCreateAlertOpen] = useState(false);
   const iconButtonStyle = {
     margin: '0 0.5vw',
   };
@@ -107,6 +120,89 @@ export default function CreateSurvey(props) {
     setType(event.target.value);
   };
 
+  function alertCancel() {
+    setCancelAlertOpen(false);
+    setCreateAlertOpen(false);
+  }
+
+  function deleteSurvey() {
+    axios.delete(`/api/surveys/${surveyID}`).then(() => {
+      localStorage.removeItem('surveyID');
+      navigate('/template');
+    });
+  }
+
+  function createComplete() {
+    localStorage.removeItem('surveyID');
+    navigate('/template');
+  }
+
+  function groupChoices(letter, name, number) {
+    let groups = [];
+    for (let i = 1; i <= number; i++) {
+      let v = i.toString();
+      if (letter) {
+        v = String.fromCharCode('A'.charCodeAt() + i - 1);
+      }
+      groups.push({
+        value: v,
+        description: `${name} ${v}`,
+      });
+    }
+    return groups;
+  }
+
+  function createGroupQuestion() {
+    if (!grouped) {
+      let groups = groupChoices(letterGroup, groupName, groupNum);
+      axios
+        .post(`/api/surveys/${surveyID}/questions/`, {
+          number: questions.length + 1,
+          title: `Which ${groupName} are you in?`,
+          required: true,
+          type: 'DP',
+          choices: groups,
+        })
+        .then((res) => {
+          if (res.status === 201) setGroupID(res.data.id);
+        });
+    } else {
+      axios.delete(`/api/surveys/${surveyID}/questions/${groupID}/`);
+    }
+    setGrouped(!grouped);
+  }
+
+  function patchGroupChoices(letter, name, num) {
+    if (grouped) {
+      let choices = groupChoices(letter, name, num);
+      axios
+        .patch(`/api/surveys/${surveyID}/questions/${groupID}/`, {
+          choices: choices,
+        })
+        .then((res) => {});
+    }
+  }
+
+  function updateGroupQuestionNum(e) {
+    if (e.target.value === '') {
+      setGroupNum(1);
+      setGrouped(false);
+    } else {
+      try {
+        let num = e.target.value;
+        if (num > 1) {
+          setGroupNum(num);
+          if (grouped && num > 1)
+            patchGroupChoices(letterGroup, groupName, num);
+        } else {
+          setGrouped(false);
+          setGroupNum(1);
+          axios.delete(`/api/surveys/${surveyID}/questions/${groupID}/`);
+        }
+      } catch {}
+    }
+  }
+
   function reset() {
     setType(0);
     setQuestion('Question');
@@ -115,14 +211,80 @@ export default function CreateSurvey(props) {
     setRequired(false);
   }
 
-  function appendQuestion() {
-    let newItem = {
-      options: options,
-      question: question,
-      type: questionType,
+  function updateTitle(e) {
+    let value = e.target.value;
+    if (value.length === 0) value = 'Untitled Survey';
+    if (value !== title) {
+      setTitle(value);
+      axios.patch(`/api/surveys/${surveyID}/`, { title: value });
+    }
+  }
+
+  const updateDescription = (e) => {
+    let value = e.target.value;
+    setDescription(value);
+    axios
+      .patch(`/api/surveys/${surveyID}/`, { description: e.target.value })
+      .then();
+  };
+
+  function deleteQuestion(e) {
+    let questionId = questions[e.target.id].id;
+    axios
+      .delete(`/api/surveys/${surveyID}/questions/${questionId}/`)
+      .then((res) => {
+        if (res.status === 204) {
+          questions.splice(e.target.id, 1);
+          setUpdate(!shouldRender);
+        }
+      });
+  }
+
+  function appendQuestion(duplicate=false) {
+    let requestContent = {
+      number: questions.length + 1 + grouped,
+      title: question,
       required: required,
+      type: types[questionType],
     };
-    setQuestions(questions.concat(newItem));
+
+    if (questionType !== 2) {
+      let parsedOptions = [];
+      for (let i = 0; i < options.length; i++) {
+        parsedOptions.push({
+          value: (i + 1).toString(),
+          description: options[i],
+        });
+      }
+
+      requestContent = {
+        number: questions.length + 1,
+        title: question,
+        required: required,
+        type: types[questionType],
+        choices: parsedOptions,
+      };
+    }
+
+    axios
+      .post(`/api/surveys/${surveyID}/questions/`, requestContent)
+      .then((res) => {
+        if (res.status === 201) {
+          let newItem = {
+            options: options,
+            question: question,
+            type: questionType,
+            required: required,
+            id: res.data.id,
+          };
+          setQuestions(questions.concat(newItem));
+          if (!duplicate) {
+            reset();
+            setNewQuestion(false);}
+        } else {
+          //TODO: @shuyaoxie add alert maybe
+        }
+      });
   }
 
   function listOptions(options, questionType) {
@@ -130,15 +292,13 @@ export default function CreateSurvey(props) {
       <div>
         {options.map((q) => {
           return (
-            <div style={{ margin: '5px', fontSize: '1.2vw' }}>
+            <div style={{ margin: '5px' }}>
               {questionType ? (
-                <CropSquareIcon fontSize="1vw" />
+                <CropSquareIcon fontSize="1%" />
               ) : (
-                <CircleOutlinedIcon fontSize="1vw" />
+                <CircleOutlinedIcon fontSize="1%" />
               )}
-                <span style={{ padding: '0.5vw', fontSize: '1vw' }}>
-                        {q}
-                </span>
+              <span style={{ padding: '0.5vw', fontSize: '90%' }}>{q}</span>
             </div>
           );
         })}
@@ -151,16 +311,15 @@ export default function CreateSurvey(props) {
       <div>
         {questions.map((q, i) => {
           return (
-            <div style={{ margin: '1vw 4vw' }} key={i}>
+            <div style={{ margin: '2% 6%' }} key={i}>
               <strong>{i + 1 + '. ' + q.question}</strong>
               {q.required ? '(*)' : ''}
               <Button
                 id={i}
                 onClick={(e) => {
-                  questions.splice(e.target.id, 1);
-                  setUpdate(!shouldRender);
+                  deleteQuestion(e);
                 }}
-                style={{ color: '#990000', fontSize: '1vw' }}
+                style={{ color: '#990000', fontSize: '1%' }}
               >
                 Delete
               </Button>
@@ -174,7 +333,7 @@ export default function CreateSurvey(props) {
                   disabled={true}
                   style={{
                     border: '1px solid grey',
-                    width: '40vw',
+                    width: '40%',
                   }}
                 />
               ) : (
@@ -186,6 +345,81 @@ export default function CreateSurvey(props) {
       </div>
     );
   }
+
+  const [surveyID, setSurveyID] = useState(localStorage.getItem('surveyID'));
+
+  React.useEffect(() => {
+    if (surveyID === null || surveyID === 'null') {
+      setTitle('Untitled Survey');
+      axios
+        .post('/api/surveys/', {
+          title: 'Untitled Survey',
+          description: description,
+        })
+        .then((response) => {
+          if (response.status !== 201) {
+            navigate('/admin');
+          }
+          setSurveyID(response.data.id);
+          localStorage.setItem('surveyID', response.data.id);
+        })
+        .catch(() => {
+          window.location.reload();
+        });
+    } else {
+      axios
+        .get(`/api/surveys/${surveyID}/`)
+        .then((res) => {
+          if (res.status === 200) {
+            setTitle(res.data.title);
+            setDescription(res.data.description);
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('surveyID');
+          window.location.reload();
+        });
+
+      axios.get(`/api/surveys/${surveyID}/questions/`).then((res) => {
+        if (res.status === 200) {
+          let existingQuestions = [];
+          let choices = [];
+          let groupPresent = false;
+          res.data.forEach((q) => {
+            if (q.type === 'DP') {
+              groupPresent = true;
+              setGrouped(true);
+              setGroupID(q.id);
+              setGroupNum(q.choices.length);
+              let tmp = q.choices[0].description;
+              let cut = q.choices.length.toString.length + 1;
+              if (tmp[tmp.length - 1] === 'A') {
+                setLetterGroup(true);
+                cut = 2;
+              }
+              setGroupName(tmp.substr(0, tmp.length - cut));
+            } else {
+              choices = [];
+              if (q.choices)
+                q.choices.forEach((c) => choices.push(c.description));
+              existingQuestions.push({
+                options: choices,
+                question: q.title,
+                type: typeConverter(q.type),
+                required: q.required,
+                id: q.id,
+              });
+            }
+          });
+          if (!groupPresent) {
+            setGroupNum(1);
+            setGroupName('Group');
+          }
+          setQuestions(existingQuestions);
+        }
+      });
+    }
+  }, []);
 
   return (
     <div
@@ -206,34 +440,47 @@ export default function CreateSurvey(props) {
           id="SurveyCreateCancel"
           style={{ color: '#FFC72C' }}
           onClick={(e) => {
-            e.preventDefault();
-            //TODO:add alert maybe?
-            //TODO: change Admin route
-            navigate('/Admin');
+            setCancelAlertOpen(true);
           }}
         >
           Cancel
         </Button>
+        <Alert
+          id="cancelAlert"
+          open={cancelAlertOpen}
+          message="Are You Sure You Want To Cancel?"
+          content="This Survey Will Be Discarded If Confirmed"
+          choiceOne="No"
+          choiceTwo="Yes"
+          handleOne={alertCancel}
+          close={alertCancel}
+          handleTwo={deleteSurvey}
+        />
         <Button
           id="SurveyCreate"
           disabled={questions.length === 0}
-          style={{ color: 'white', fontWeight: 'bold' }}
-          onClick={(e) => {
-            e.preventDefault();
-            //TODO:add alert maybe?
-            //TODO: save to db
-            //TODO: change Admin route
-            navigate('/Admin');
-          }}
+          style={questions.length ? { color: 'white', fontWeight: 'bold' } : {}}
+          onClick={() => setCreateAlertOpen(true)}
         >
           Create
         </Button>
+        <Alert
+          id="createAlert"
+          open={createAlertOpen}
+          message="Have You Finished Editing The Survey?"
+          content="This Survey Will Be Created If Confirmed"
+          choiceOne="No"
+          choiceTwo="Yes"
+          handleOne={alertCancel}
+          close={alertCancel}
+          handleTwo={createComplete}
+        />
       </div>
 
       <div style={editGround}>
         <input
           type="text"
-          value={title}
+          defaultValue={title}
           style={{
             width: '60%',
             textAlign: 'center',
@@ -241,20 +488,22 @@ export default function CreateSurvey(props) {
             fontSize: '1.2em',
             color: 'grey',
           }}
-          onChange={(e) => setTitle(e.target.value)}
+          onBlur={(e) => updateTitle(e)}
         />
 
         <div
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'space-evenly',
             alignItems: 'center',
+            width: '95%',
+            marginLeft: '3%',
           }}
         >
           <h4 style={{ color: '#990000' }}>Description</h4>
           <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            defaultValue={description}
+            onBlur={updateDescription}
             style={{
               border: '1px solid grey',
               minHeight: '30px',
@@ -329,9 +578,9 @@ export default function CreateSurvey(props) {
                   return (
                     <div style={{ margin: '5px', fontSize: '1.2vw' }}>
                       {questionType ? (
-                        <CropSquareIcon fontSize="1vw" />
+                        <CropSquareIcon fontSize="1%" />
                       ) : (
-                        <CircleOutlinedIcon fontSize="1vw" />
+                        <CircleOutlinedIcon fontSize="1%" />
                       )}
                       <span style={{ padding: '0.8vw', fontSize: '1vw' }}>
                         {q}
@@ -369,7 +618,7 @@ export default function CreateSurvey(props) {
                       borderBottom: 'solid 1px #C4C4C4',
                       fontWeight: 'bold',
                       margin: '0.5vw 0 0 0.5vw',
-                      paddingLeft:'0.5vw'
+                      paddingLeft: '0.5vw',
                     }}
                   />
                 </div>
@@ -405,10 +654,7 @@ export default function CreateSurvey(props) {
                 disabled={options.length === 0 && questionType !== 2}
                 onClick={(e) => {
                   e.preventDefault();
-                  //TODO:add to question list
                   appendQuestion();
-                  reset();
-                  setNewQuestion(false);
                 }}
               >
                 <DoneOutlineIcon />
@@ -419,7 +665,7 @@ export default function CreateSurvey(props) {
                 disabled={options.length === 0}
                 onClick={(e) => {
                   e.preventDefault();
-                  appendQuestion();
+                  appendQuestion(true);
                 }}
               >
                 <ContentCopyIcon />
@@ -459,19 +705,23 @@ export default function CreateSurvey(props) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'left',
-            alignItems:'center',
+            alignItems: 'center',
           }}
         >
           <strong style={{ color: '#990000' }}>Divide By</strong>
           <input
-            type="text"
-            value={groupNum}
-            onChange={(e) => {
-              setGroupNum(e.target.value);
+            id="SurveyGroupedNumber"
+            type="number"
+            min="1"
+            max="30"
+            defaultValue={groupNum}
+            onKeyDown={(e) => {
+              if (e.key === 'e') e.preventDefault();
             }}
+            onBlur={(e) => updateGroupQuestionNum(e)}
             style={{
               minHeight: '10px',
-              width: '5%',
+              width: '12%',
               marginLeft: '1vw',
               border: 'none',
               borderBottom: 'solid 1px #C4C4C4',
@@ -483,9 +733,10 @@ export default function CreateSurvey(props) {
 
           <input
             type="text"
-            value={groupName}
-            onChange={(e) => {
+            defaultValue={groupName}
+            onBlur={(e) => {
               setGroupName(e.target.value);
+              patchGroupChoices(letterGroup, e.target.value, groupNum);
             }}
             style={{
               minHeight: '10px',
@@ -500,16 +751,17 @@ export default function CreateSurvey(props) {
           />
           <Switch
             checked={grouped}
-            onChange={() => {
-              setGrouped(!grouped);
-            }}
+            onChange={(e) => createGroupQuestion()}
+            disabled={groupNum <= 1 && !grouped}
           />
           <strong style={{ color: '#C4C4C4' }}> in alphabet</strong>
           <Switch
             checked={letterGroup}
-            onChange={() => {
+            onChange={(e) => {
+              patchGroupChoices(!letterGroup, groupName, groupNum);
               setLetterGroup(!letterGroup);
             }}
+            disabled={groupNum <= 1 && !grouped}
           />
         </div>
 
