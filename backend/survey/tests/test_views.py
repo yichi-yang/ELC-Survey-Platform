@@ -66,6 +66,9 @@ class SurveyViewSetTests(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    def get_survey_id_set(self, data):
+        return set(survey['id'] for survey in data)
+
     def test_list_survey(self):
         """
         Anyone can list surveys.
@@ -98,7 +101,7 @@ class SurveyViewSetTests(TestCase):
 
         # user1 should see both surveys
         response = self.client.get('/api/surveys/')
-        u1_get_survey_ids = set(survey['id'] for survey in response.data)
+        u1_get_survey_ids = self.get_survey_id_set(response.data)
 
         self.assertSetEqual(u1_get_survey_ids, {survey1_id, survey2_id})
 
@@ -106,7 +109,7 @@ class SurveyViewSetTests(TestCase):
         self.client.force_authenticate(user2)
 
         response = self.client.get('/api/surveys/')
-        u2_get_survey_ids = set(survey['id'] for survey in response.data)
+        u2_get_survey_ids = self.get_survey_id_set(response.data)
 
         self.assertSetEqual(u2_get_survey_ids, {survey1_id, survey2_id})
 
@@ -270,9 +273,6 @@ class SurveyViewSetTests(TestCase):
         """
         user = User.objects.create_user('user')
 
-        # user1 creates 1 survey
-        self.client.force_authenticate(user)
-
         survey = Survey(
             title='test survey',
             description='test description'
@@ -286,6 +286,8 @@ class SurveyViewSetTests(TestCase):
             survey=survey
         )
         mc_question.save()
+
+        self.client.force_authenticate(user)
 
         response = self.client.get(f'/api/surveys/{survey.id}/')
         self.assertEqual(response.status_code, 200)
@@ -340,6 +342,65 @@ class SurveyViewSetTests(TestCase):
             format='json'
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_list_survey_filter(self):
+        """
+        You can filter surveys using draft and keywork query parameter.
+        """
+        survey1 = Survey(
+            title='apple survey',
+            description='test description',
+            draft=True
+        )
+        survey1.save()
+
+        survey2 = Survey(
+            title='banana survey',
+            description='test description',
+            draft=False
+        )
+        survey2.save()
+
+        # no filters
+        response = self.client.get(f'/api/surveys/')
+        self.assertEqual(response.status_code, 200)
+        self.assertSetEqual(
+            self.get_survey_id_set(response.data),
+            {survey1.id, survey2.id}
+        )
+
+        # filter by draft
+        response = self.client.get(f'/api/surveys/?draft=true')
+        self.assertEqual(response.status_code, 200)
+        self.assertSetEqual(
+            self.get_survey_id_set(response.data), {survey1.id}
+        )
+
+        response = self.client.get(f'/api/surveys/?draft=false')
+        self.assertEqual(response.status_code, 200)
+        self.assertSetEqual(
+            self.get_survey_id_set(response.data), {survey2.id}
+        )
+
+        # no filter by keyword
+        response = self.client.get(f'/api/surveys/?keyword=apple')
+        self.assertEqual(response.status_code, 200)
+        self.assertSetEqual(
+            self.get_survey_id_set(response.data), {survey1.id}
+        )
+
+        response = self.client.get(f'/api/surveys/?keyword=banana')
+        self.assertEqual(response.status_code, 200)
+        self.assertSetEqual(
+            self.get_survey_id_set(response.data), {survey2.id}
+        )
+
+        # you can also combine both query parameters
+        response = self.client.get(f'/api/surveys/?draft=true&keyword=banana')
+        self.assertEqual(response.status_code, 200)
+        self.assertSetEqual(
+            self.get_survey_id_set(response.data), set()
+        )
 
 
 class SurveyQuestionViewSetTests(TestCase):
