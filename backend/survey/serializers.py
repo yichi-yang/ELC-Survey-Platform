@@ -378,7 +378,7 @@ class NestedSurveySessionSerializer(serializers.ModelSerializer):
         queryset=Survey.objects.all()
     )
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    code = serializers.IntegerField(allow_null=True)
+    #code = serializers.IntegerField(allow_null=True)
 
     class Meta:
         model = SurveySession

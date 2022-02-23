@@ -843,6 +843,72 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
 class NestedSurveySessionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
     """
     API endpoint that allows survey sessions to be created or viewed.
+    # Field Description
+
+    | Field               | Type     |          | Description                                                                  |
+    | ------------------- | -------- | -------- | ---------------------------------------------------------------------------- |
+    | `id`                | `string` | readonly | The session's id.                                                            |
+    | `survey`            | `string` | required | The survey's id.                                                             |
+    
+    # Examples
+
+    ## Create Session
+
+    To create a session, `POST` the following to `/api/<survey_id>/sessions`:  
+
+    ``` javascript
+    // POST /api/<survey_id>/sessions
+    {  
+        "survey": "ZL9AOn3"
+    }
+
+    // HTTP 201 Created
+    {
+        "id": "vrzkOzD",
+        "code": 1798,
+        "survey": "ZL9AOn3"
+    }
+    ```
+    ## List Sessions
+
+    You can list all sessions that a specific survey has by `GET /api/<survey_id>/sessions`.  
+
+    ``` javascript
+    // GET /api/<survey_id>/sessions
+
+    // HTTP 200 OK
+    {
+        "count": 2,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "id": "vrzkOzD",
+                "code": 1798,
+                "survey": "ZL9AOn3"
+            },
+            {
+                "id": "Me6ePNq",
+                "code": 4081,
+                "survey": "Wl95e9L"
+            }
+        ]
+    }
+    ```
+    ## Fetch Session
+
+    To fetch a specific session for a specific survey, `GET /api/<survey_id>/sessions/<session_id>`.  
+
+    ``` javascript
+    // GET /api/ZL9AOn3/sessions/vrzkOzD
+
+    // HTTP 200 OK
+    {
+        "id": "vrzkOzD",
+        "code": 4081,
+        "survey": "ZL9AOn3"
+    }
+    ```
     """
     serializer_class = NestedSurveySessionSerializer
     # we can change this later
