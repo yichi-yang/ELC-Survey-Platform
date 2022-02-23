@@ -62,7 +62,7 @@ class SurveyViewSet(viewsets.ModelViewSet):
     | `title`           | `string` |          | The survey's title.                                                                                                                 |
     | `description`     | `string` | optional | The survey's description.                                                                                                           |
     | `created_at`      | `string` | readonly | The survey's creation time in ISO 8601 format.                                                                                      |
-    
+
     # Examples
 
     ## Create Survey
@@ -95,20 +95,54 @@ class SurveyViewSet(viewsets.ModelViewSet):
     // GET /api/surveys/
 
     // HTTP 200 OK
-    [
-        {
-            "id": "ZL9AOn3",
-            "title": "My First Survey",
-            "description": "123",
-            "created_at": "2022-02-14T02:00:43.454549Z"
-        },
-        {
-            "id": "x5zMkQe",
-            "title": "Survey Name",
-            "description": "A very interesting survey",
-            "created_at": "2022-02-14T02:01:16.168116Z"
-        }
-    ]
+    {
+        "count": 2,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "id": "ZL9AOn3",
+                "title": "My First Survey",
+                "description": "123",
+                "created_at": "2022-02-14T02:00:43.454549Z"
+            },
+            {
+                "id": "x5zMkQe",
+                "title": "Survey Name",
+                "description": "A very interesting survey",
+                "created_at": "2022-02-14T02:01:16.168116Z"
+            }
+        ]
+    }
+    ```
+
+    You can use query parameters `limit` (default: 20, max: 100) and `offset` to
+    navigate between different pages if there are too many surveys to
+    fit in one page.
+
+    ``` javascript
+    // GET /api/surveys/?offset=2&limit=2
+
+    // HTTP 200 OK
+    {
+        "count": 8,
+        "next": "http://127.0.0.1:8000/api/surveys/?limit=2&offset=4",
+        "previous": "http://127.0.0.1:8000/api/surveys/?limit=2",
+        "results": [
+            {
+                "id": "13zlXze",
+                "title": "Untitled Survey",
+                "description": "",
+                "created_at": "2022-02-20T23:42:15.569130Z"
+            },
+            {
+                "id": "vrzkOzD",
+                "title": "Untitled Survey",
+                "description": "",
+                "created_at": "2022-02-20T23:42:50.312421Z"
+            }
+        ]
+    }
     ```
 
     ## Fetch Survey

@@ -96,7 +96,7 @@ class SurveyViewSetTests(TestCase):
 
         # user1 should see both surveys
         response = self.client.get('/api/surveys/')
-        u1_get_survey_ids = set(survey['id'] for survey in response.data)
+        u1_get_survey_ids = set(survey['id'] for survey in response.data['results'])
 
         self.assertSetEqual(u1_get_survey_ids, {survey1_id, survey2_id})
 
@@ -104,7 +104,7 @@ class SurveyViewSetTests(TestCase):
         self.client.force_authenticate(user2)
 
         response = self.client.get('/api/surveys/')
-        u2_get_survey_ids = set(survey['id'] for survey in response.data)
+        u2_get_survey_ids = set(survey['id'] for survey in response.data['results'])
 
         self.assertSetEqual(u2_get_survey_ids, {survey1_id, survey2_id})
 
@@ -113,7 +113,7 @@ class SurveyViewSetTests(TestCase):
 
         response = self.client.get('/api/surveys/')
         unauthenticated_get_survey_ids = set(
-            survey['id'] for survey in response.data)
+            survey['id'] for survey in response.data['results'])
 
         self.assertSetEqual(unauthenticated_get_survey_ids,
                             {survey1_id, survey2_id})
