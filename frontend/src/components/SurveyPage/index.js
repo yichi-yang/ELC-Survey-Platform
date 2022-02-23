@@ -70,6 +70,8 @@ export default function SurveyPage(surveyID) {
     const [group, setRoomList] = useState([]);
     /* Change group number */
     const [room, setRoom] = useState('');
+    /* Other Questions */
+    const [questionList , setQuestionList] = useState([]);
     const handleRoomChange = (event) => {
         setRoom(event.target.value);
     };
@@ -86,12 +88,12 @@ export default function SurveyPage(surveyID) {
     };
     const { op1, op2, op3 } = checked;
 
-    /* 
+    /*
     // 测试state用
     useEffect(() => {
         console.log("最新值")
-        console.log(group)
-    }, [group])
+        console.log(questionList)
+    }, [questionList])
     */
 
     useEffect(() => {
@@ -108,6 +110,12 @@ export default function SurveyPage(surveyID) {
                         room_array.push(choice.value)
                     });
                     setRoomList([...room_array])
+                }
+                /* Store Json into questionList */
+                else {
+                    setQuestionList(questionList => { 
+                        return[...questionList, question]
+                    })
                 }
             }));
     }, []);
@@ -139,7 +147,30 @@ export default function SurveyPage(surveyID) {
                 </div>
                 {/* Radio group selection */}
                 {/* @yiwenwang Need to figure out how to dynamically generate useState hook */}
-
+                
+                <div style={questionMargin}>
+                    {questionList.map((q) => {
+                        if (q.type === 'MC') {
+                            return (
+                                <FormControl>
+                                    <div>Question {q.number}. {q.title}</div>
+                                    <RadioGroup
+                                        aria-labelledby="demo-radio-buttons-group-label"
+                                        defaultValue="female"
+                                        name="radio-buttons-group"
+                                    >
+                                        {q.choices.map((c) => {
+                                            return (
+                                                <FormControlLabel value={c.value} control={<Radio />} label={c.description} />
+                                            )
+                                        })}
+                                    </RadioGroup>
+                                </FormControl>
+                            );
+                        }
+                    })}
+                </div>
+                {/* Below is hardcoding MC question, need be deleted after test */}
                 <div style={questionMargin}>
                     <FormControl>
                         <div>Question 1</div>
@@ -154,6 +185,7 @@ export default function SurveyPage(surveyID) {
                         </RadioGroup>
                     </FormControl>
                 </div>
+
 
 
                 {/* Text field */}
