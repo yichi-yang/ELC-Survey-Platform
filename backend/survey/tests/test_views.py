@@ -67,7 +67,7 @@ class SurveyViewSetTests(TestCase):
         self.assertEqual(response.status_code, 403)
 
     def get_survey_id_set(self, data):
-        return set(survey['id'] for survey in data)
+        return set(survey['id'] for survey in data['results'])
 
     def test_list_survey(self):
         """
@@ -118,7 +118,7 @@ class SurveyViewSetTests(TestCase):
 
         response = self.client.get('/api/surveys/')
         unauthenticated_get_survey_ids = set(
-            survey['id'] for survey in response.data)
+            survey['id'] for survey in response.data['results'])
 
         self.assertSetEqual(unauthenticated_get_survey_ids,
                             {survey1_id, survey2_id})
