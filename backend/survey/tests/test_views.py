@@ -343,6 +343,14 @@ class SurveyViewSetTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+        # make sure we can also reset it to null
+        response = self.client.patch(
+            f'/api/surveys/{survey.id}/',
+            {'group_by_question': None},
+            format='json'
+        )
+        self.assertEqual(response.status_code, 200)
+
     def test_list_survey_filter(self):
         """
         You can filter surveys using draft and keywork query parameter.
