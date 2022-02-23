@@ -48,7 +48,9 @@ class SurveyViewSetTests(TestCase):
             response_data,
             {
                 'title': 'test_create_survey',
-                'description': 'only authenticated users can create surveys'
+                'description': 'only authenticated users can create surveys',
+                'draft': True,
+                'group_by_question': None
             }
         )
 
@@ -261,6 +263,83 @@ class SurveyViewSetTests(TestCase):
 
         response = self.client.delete(f'/api/surveys/{survey2_id}/')
         self.assertEqual(response.status_code, 204)
+
+    def test_set_group_question(self):
+        """
+        You can update group by question after a survey is created.
+        """
+        user = User.objects.create_user('user')
+
+        # user1 creates 1 survey
+        self.client.force_authenticate(user)
+
+        survey = Survey(
+            title='test survey',
+            description='test description'
+        )
+        survey.save()
+        mc_question = SurveyQuestion(
+            number=1,
+            title='test question',
+            type='MC',
+            required=False,
+            survey=survey
+        )
+        mc_question.save()
+
+        response = self.client.get(f'/api/surveys/{survey.id}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['group_by_question'], None)
+
+        response = self.client.patch(
+            f'/api/surveys/{survey.id}/',
+            {'group_by_question': str(mc_question.id)},
+            format='json'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data['group_by_question'], str(mc_question.id)
+        )
+
+        # group_by_question must be a multiple choice or dropdown question
+
+        sa_question = SurveyQuestion(
+            number=1,
+            title='test question SA',
+            type='SA',
+            required=False,
+            survey=survey
+        )
+        sa_question.save()
+
+        response = self.client.patch(
+            f'/api/surveys/{survey.id}/',
+            {'group_by_question': str(sa_question.id)},
+            format='json'
+        )
+        self.assertEqual(response.status_code, 400)
+
+        # you shouldn't be able to mix and match question / survey
+        another_survey = Survey(
+            title='test survey',
+            description='test description'
+        )
+        another_survey.save()
+        another_question = SurveyQuestion(
+            number=1,
+            title='test question',
+            type='MC',
+            required=False,
+            survey=another_survey
+        )
+        another_question.save()
+
+        response = self.client.patch(
+            f'/api/surveys/{survey.id}/',
+            {'group_by_question': str(another_question.id)},
+            format='json'
+        )
+        self.assertEqual(response.status_code, 400)
 
 
 class SurveyQuestionViewSetTests(TestCase):
