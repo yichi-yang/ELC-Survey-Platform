@@ -3,7 +3,7 @@ from rest_framework import viewsets, mixins
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import ValidationError
-from .models import Survey, SurveyQuestion, SurveySubmission
+from .models import Survey, SurveyQuestion, SurveyQuestionChoice, SurveySubmission
 from .serializers import (
     SurveySerializer,
     NestedSurveyQuestionSerializer,
@@ -18,7 +18,15 @@ from .permissions import (
 )
 from .exceptions import BadQueryParameter
 import random
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
+# creates another instance of a model with all the same fields
+# except for id
+def duplicateModel(instance):
+    instance.pk = None
+    instance._state.adding = True
+    instance.save()
 
 class NestedViewMixIn:
     """
@@ -239,12 +247,51 @@ class SurveyViewSet(viewsets.ModelViewSet):
     // HTTP 204 No Content
     ```
 
+    ## Duplicate Survey
+
+    To duplicate a specific survey, `POST /api/surveys/<id>/duplicate`.  
+
+    > Note: duplicating a survey also duplicates all associated questions and responses.  
+
+    ``` javascript
+    // POST /api/surveys/x5zMkQe/duplicate
+
+    // HTTP 200 OK
+    {
+        "id": "oxz3r94",
+        "title": "Survey Name",
+        "description": "New description",
+        "draft": true,
+        "group_by_question": null,
+        "created_at": "2022-02-14T02:01:16.168116Z"
+    }
+    ```
     # Related Endpoints
 
     To access a survey's questions, use `/api/surveys/<id>/questions/`.
     """
     serializer_class = SurveySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request, pk=None):
+        survey = self.get_object()
+        id = survey.id
+        duplicateModel(survey)
+
+        questions = SurveyQuestion.objects.filter(survey=id).all()
+
+        for q in questions:
+            q_id = q.id
+            q.survey = survey
+            duplicateModel(q)
+
+            choices = SurveyQuestionChoice.objects.filter(question=q_id).all()
+            for c in choices:
+                c.question = q
+                duplicateModel(c)
+
+        return Response(SurveySerializer(instance=survey).data)
 
     def get_queryset(self):
         queryset = Survey.objects.all()
