@@ -238,6 +238,10 @@ class SurveyViewSet(viewsets.ModelViewSet):
 
     // HTTP 204 No Content
     ```
+
+    # Related Endpoints
+
+    To access a survey's questions, use `/api/surveys/<id>/questions/`.
     """
     serializer_class = SurveySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -850,10 +854,11 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
 
     # Field Description
 
-    | Field    | Type     |          | Description       |
-    | -------- | -------- | -------- | ----------------- |
-    | `id`     | `string` | readonly | The session's id. |
-    | `survey` | `string` | required | The survey's id.  |
+    | Field    | Type     |          | Description                |
+    | -------- | -------- | -------- | -------------------------- |
+    | `id`     | `string` | readonly | The session's id.          |
+    | `code`   | `int`    | readonly | The session's unique code. |
+    | `survey` | `string` | required | The survey's id.           |
 
     # Examples
 
@@ -877,7 +882,9 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
 
     ## List Sessions
 
-    You can list all your sessions for a specific survey by `GET /api/sessions/`.  
+    You can list all your sessions for a specific survey by `GET /api/sessions/`. 
+
+    > Note: You'll only see sessions created by you (the current user). 
 
     ``` javascript
     // GET /api/sessions/
@@ -903,7 +910,7 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
     ```
 
     You can also filter by `survey`. This is useful if you want to find out if
-    an session already exists for a specific survey.
+    a session already exists for a specific survey.
 
     ``` javascript
     // GET /api/sessions/?survey=Wl95e9L
@@ -947,6 +954,10 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
 
     // 204 No Content
     ```
+
+    # Related Endpoints
+
+    To do reverse lookups using `code`, see [code to session endpoint](/api/code/).
     """
     serializer_class = SurveySessionSerializer
     # we can change this later
@@ -977,7 +988,7 @@ class CodeToSessionViewSet(mixins.RetrieveModelMixin,
 
     # Field Description
 
-    See [SurveySession](/api/sessions/).
+    See [survey session endpoint](/api/sessions/).
 
     # Examples
 
@@ -994,8 +1005,12 @@ class CodeToSessionViewSet(mixins.RetrieveModelMixin,
         "code": 1234,
         "survey": "Wl95e9L"
     }
-
     ```
+
+    # Related Endpoints
+
+    To create, fetch, list, delete sessions, see [survey session endpoint](/api/sessions/).
+
     """
     serializer_class = SurveySessionSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
