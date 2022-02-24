@@ -957,7 +957,7 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
 
     # Related Endpoints
 
-    To do reverse lookups using `code`, see [code to session endpoint](/api/code/).
+    To do reverse lookups using `code`, see [code to session endpoint](/api/codes/).
     """
     serializer_class = SurveySessionSerializer
     # we can change this later
@@ -994,10 +994,10 @@ class CodeToSessionViewSet(mixins.RetrieveModelMixin,
 
     ## Lookup Session by Code
 
-    To fetch the session with a specific code, `GET /api/code/<code>/`.
+    To fetch the session with a specific code, `GET /api/codes/<code>/`.
 
     ``` javascript
-    // GET /api/code/1234/
+    // GET /api/codes/1234/
 
     // HTTP 200 OK
     {

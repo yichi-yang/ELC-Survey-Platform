@@ -27,16 +27,16 @@ survey_router = routers.NestedSimpleRouter(
 survey_router.register(
     r'questions',
     NestedSurveyQuestionViewSet,
-    basename='survey-questions'
+    basename='survey-question'
 )
 survey_router.register(
     r'submissions',
     NestedSurveySubmissionViewSet,
-    basename='survey-submissions'
+    basename='survey-submission'
 )
 
 router.register(
-    r'code',
+    r'codes',
     CodeToSessionViewSet,
     basename='code'
 )
