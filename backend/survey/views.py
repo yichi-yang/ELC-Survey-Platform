@@ -1,5 +1,5 @@
 from django.db.models import QuerySet
-from rest_framework import viewsets, mixins
+from rest_framework import viewsets, mixins, status
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import ValidationError
@@ -256,7 +256,7 @@ class SurveyViewSet(viewsets.ModelViewSet):
     ``` javascript
     // POST /api/surveys/x5zMkQe/duplicate
 
-    // HTTP 200 OK
+    // HTTP 201 CREATED
     {
         "id": "oxz3r94",
         "title": "Survey Name",
@@ -291,7 +291,7 @@ class SurveyViewSet(viewsets.ModelViewSet):
                 c.question = q
                 duplicateModel(c)
 
-        return Response(SurveySerializer(instance=survey).data)
+        return Response(SurveySerializer(instance=survey).data, status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
         queryset = Survey.objects.all()
