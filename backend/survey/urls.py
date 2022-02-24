@@ -3,7 +3,7 @@ from .views import (
     SurveyViewSet,
     NestedSurveyQuestionViewSet,
     NestedSurveySubmissionViewSet,
-    NestedSurveySessionViewSet
+    SurveySessionViewSet
 )
 from rest_framework_nested import routers
 
@@ -12,6 +12,11 @@ router.register(
     r'surveys',
     SurveyViewSet,
     basename='survey'
+)
+router.register(
+    r'sessions',
+    SurveySessionViewSet,
+    basename='session'
 )
 questions_router = routers.NestedSimpleRouter(
     router,
@@ -33,20 +38,9 @@ submissions_router.register(
     NestedSurveySubmissionViewSet,
     basename='survey-submissions'
 )
-sessions_router = routers.NestedSimpleRouter(
-    router,
-    r'surveys',
-    lookup='survey'
-)
-sessions_router.register(
-    r'sessions',
-    NestedSurveySessionViewSet,
-    basename='survey-sessions'
-)
 
 urlpatterns = [
     path(r'', include(router.urls)),
     path(r'', include(questions_router.urls)),
     path(r'', include(submissions_router.urls)),
-    path(r'', include(sessions_router.urls))
 ]

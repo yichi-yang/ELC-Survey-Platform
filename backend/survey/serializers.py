@@ -5,6 +5,7 @@ from .models import (Survey, SurveyQuestion, SurveyQuestionChoice,
                      SurveyResponse, SurveySubmission, Survey, SurveySession)
 from .validators import OwnedByRequestUser
 
+
 class SerializerContextDefault:
     """
     May be applied as a `default=...` value on a serializer field.
@@ -24,10 +25,38 @@ class SurveySerializer(serializers.ModelSerializer):
         source_field='survey.Survey.id',
         read_only=True
     )
+    group_by_question = serializers.PrimaryKeyRelatedField(
+        pk_field=HashidSerializerCharField(
+            source_field='survey.SurveyQuestion.id'),
+        queryset=SurveyQuestion.objects.all(),
+        required=False,
+        allow_null=True
+    )
 
     class Meta:
         model = Survey
-        fields = ['id', 'title', 'description', 'created_at']
+        fields = ['id', 'title', 'description',
+                  'draft', 'group_by_question', 'created_at']
+
+    def validate_group_by_question(self, question):
+        """
+        Check that the question belongs to current survey.
+        """
+        if question is None:
+            return question
+
+        if question.survey != self.instance:
+            raise serializers.ValidationError(
+                "group_by_question doesn't belong to this survey"
+            )
+        if question.type not in [
+            SurveyQuestion.QuestionType.MULTICHOICE.value,
+            SurveyQuestion.QuestionType.DROPDOWN.value
+        ]:
+            raise serializers.ValidationError(
+                "group_by_question must be a multiple choice or dropdown question"
+            )
+        return question
 
 
 class NestedSurveyQuestionChoiceSerializer(serializers.ModelSerializer):
@@ -343,7 +372,7 @@ class NestedSurveySubmissionSerializer(serializers.ModelSerializer):
         raise NotImplementedError('Updating a submission is not supported.')
 
 
-class NestedSurveySessionSerializer(serializers.ModelSerializer):
+class SurveySessionSerializer(serializers.ModelSerializer):
     id = HashidSerializerCharField(
         source_field='survey.Survey.id',
         read_only=True
@@ -353,8 +382,8 @@ class NestedSurveySessionSerializer(serializers.ModelSerializer):
         queryset=Survey.objects.all()
     )
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    code = serializers.IntegerField(allow_null=True)
-    
+    #code = serializers.IntegerField(allow_null=True)
+
     class Meta:
         model = SurveySession
         fields = ['id', 'code', 'survey', 'owner']

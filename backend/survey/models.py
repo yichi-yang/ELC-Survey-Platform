@@ -14,6 +14,14 @@ class Survey(models.Model):
 
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    draft = models.BooleanField(default=True)
+    group_by_question = models.ForeignKey(
+        'SurveyQuestion',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="group_survey"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

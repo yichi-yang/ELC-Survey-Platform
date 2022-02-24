@@ -11,9 +11,9 @@ import Button from '@material-ui/core/Button';
 import TextField from '@mui/material/TextField';
 import FormGroup from '@mui/material/FormGroup';
 import Checkbox from '@mui/material/Checkbox';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-export default function SurveyPage() {
+export default function SurveyPage(surveyID) {
 
     const bodyStyle = {
         display: 'flex',
@@ -64,8 +64,14 @@ export default function SurveyPage() {
         fontSize: '1em',
         cursor: 'pointer'
     };
-
+    /* Survey Title */
+    const [title, setTitle] = useState('Survey A');
+    /* Group Number */
+    const [group, setRoomList] = useState([]);
+    /* Change group number */
     const [room, setRoom] = useState('');
+    /* Other Questions */
+    const [questionList , setQuestionList] = useState([]);
     const handleRoomChange = (event) => {
         setRoom(event.target.value);
     };
@@ -82,10 +88,42 @@ export default function SurveyPage() {
     };
     const { op1, op2, op3 } = checked;
 
+    /*
+    // 测试state用
+    useEffect(() => {
+        console.log("最新值")
+        console.log(questionList)
+    }, [questionList])
+    */
+
+    useEffect(() => {
+        fetch(`/api/surveys/${surveyID}/`)
+            .then(response => response.json())
+            .then(surveyInfo => setTitle(surveyInfo.title));
+        fetch(`/api/surveys/${surveyID}/questions/`)
+            .then(response => response.json())
+            .then(data => data.map((question) => {
+                /* Room Number Generator */
+                let room_array = [];
+                if (question.type === 'DP') {
+                    question.choices.map((choice) => {
+                        room_array.push(choice.value)
+                    });
+                    setRoomList([...room_array])
+                }
+                /* Store Json into questionList */
+                else {
+                    setQuestionList(questionList => { 
+                        return[...questionList, question]
+                    })
+                }
+            }));
+    }, []);
+
     return (
         <div style={bodyStyle}>
             <div style={headingStyle}>
-                <strong>Survey A</strong>
+                <strong>{title}</strong>
             </div>
             <div style={content}>
                 <div style={questionMargin}>
@@ -99,18 +137,40 @@ export default function SurveyPage() {
                             label="RoomNumber"
                             onChange={handleRoomChange}
                         >
-                            <MenuItem value={'A'}>A</MenuItem>
-                            <MenuItem value={'B'}>B</MenuItem>
-                            <MenuItem value={'C'}>C</MenuItem>
-                            <MenuItem value={'D'}>D</MenuItem>
-                            <MenuItem value={'E'}>E</MenuItem>
-                            <MenuItem value={'F'}>F</MenuItem>
+                            {group.map((value) => {
+                                return (
+                                    <MenuItem value={value}>{value}</MenuItem>
+                                );
+                            })}
                         </Select>
                     </FormControl>
                 </div>
                 {/* Radio group selection */}
                 {/* @yiwenwang Need to figure out how to dynamically generate useState hook */}
-
+                
+                <div style={questionMargin}>
+                    {questionList.map((q) => {
+                        if (q.type === 'MC') {
+                            return (
+                                <FormControl>
+                                    <div>Question {q.number}. {q.title}</div>
+                                    <RadioGroup
+                                        aria-labelledby="demo-radio-buttons-group-label"
+                                        defaultValue="female"
+                                        name="radio-buttons-group"
+                                    >
+                                        {q.choices.map((c) => {
+                                            return (
+                                                <FormControlLabel value={c.value} control={<Radio />} label={c.description} />
+                                            )
+                                        })}
+                                    </RadioGroup>
+                                </FormControl>
+                            );
+                        }
+                    })}
+                </div>
+                {/* Below is hardcoding MC question, need be deleted after test */}
                 <div style={questionMargin}>
                     <FormControl>
                         <div>Question 1</div>
@@ -125,6 +185,7 @@ export default function SurveyPage() {
                         </RadioGroup>
                     </FormControl>
                 </div>
+
 
 
                 {/* Text field */}

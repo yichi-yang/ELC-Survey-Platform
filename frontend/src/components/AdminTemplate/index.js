@@ -24,7 +24,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 
 const pages = [];
 const settings = ['Logout'];
-const NAMES = ['Football'];
+const NAMES = ['Football','Basketball','Survey1','Survey2','Survey3'];
 
 const ResponsiveAppBar = () => {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
@@ -264,7 +264,7 @@ const AlertDialogRelease =(props)=> {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Decline</Button>
-          <Button onClick={handleClose} autoFocus>
+          <Button href="released" autoFocus>
             Confirm
           </Button>
         </DialogActions>
@@ -307,11 +307,11 @@ export default function AdminTemplate(){
       <Grid item xs={12}>
         <ResponsiveAppBar/>
       </Grid>
-      <Grid item xs={10}>
+      <Grid item xs={9.5}>
         <strong style={{color:'black', fontSize: '1.5vw', marginLeft:'5vw'}}>Survey Template</strong>
       </Grid>
       
-      <Grid item xs={2}>
+      <Grid item xs={2.5}>
         <Search>
         <SearchIconWrapper>
         <SearchIcon />
@@ -322,33 +322,22 @@ export default function AdminTemplate(){
         />
         </Search>
       </Grid>
-      <Grid item xs={1}></Grid>
-      <Grid item xs={11}>
-        <SurveyBar name="Survey1"/>
-      </Grid>
-      <Grid item xs={1}></Grid>
-      <Grid item xs={11}>
-        <SurveyBar name="Survey2"/>
-      </Grid>
-      <Grid item xs={1}></Grid>
-      <Grid item xs={11}>
-        <SurveyBar name="Survey3"/>
-      </Grid>
-      <Grid item xs={1}></Grid>
-      <Grid item xs={11}>
-        <SurveyBar name="Survey4"/>
-      </Grid>
-      <Grid item xs={1}></Grid>
-      <Grid item xs={11}>
-        <SurveyBar name="Survey5"/>
-      </Grid>
-      <Grid item xs={1}></Grid>
-      <Grid item xs={11}>
-        <SurveyBar name="Survey6"/>
-      </Grid>
+
+      {NAMES.map((name) => (
+        <Grid container style={{marginTop:'1.5vw'}}>
+          <Grid item xs={1.5}></Grid>
+          <Grid item xs={10.5}>
+            <SurveyBar name={name}/>
+          </Grid>
+        </Grid>
+      ))}
+      
+      
       <Grid item xs={10}></Grid>
       <Grid item xs={2}>
+
       <IconButton color="primary" aria-label="add to shopping cart" href='/admin/create_survey'>
+
         <AddCircleOutlineIcon style={{color:'#FFC72C'}} sx={{ fontSize: 80 }}/>
       </IconButton>
       </Grid>
