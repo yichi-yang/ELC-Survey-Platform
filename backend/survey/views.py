@@ -8,7 +8,7 @@ from .serializers import (
     SurveySerializer,
     NestedSurveyQuestionSerializer,
     NestedSurveySubmissionSerializer,
-    NestedSurveySessionSerializer
+    SurveySessionSerializer
 )
 from .models import Survey, SurveyQuestion, SurveySubmission, SurveySession
 from .utils import handle_invalid_hashid, query_param_to_bool
@@ -839,23 +839,87 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
             .filter(survey=self.kwargs['survey_pk'])\
             .prefetch_related('responses')
 
-
-class NestedSurveySessionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
+class SurveySessionViewSet(mixins.CreateModelMixin, 
+                   mixins.RetrieveModelMixin, 
+                   mixins.DestroyModelMixin,
+                   mixins.ListModelMixin,
+                   viewsets.GenericViewSet):
     """
     API endpoint that allows survey sessions to be created or viewed.
+    # Field Description
+
+    | Field               | Type     |          | Description                                                                  |
+    | ------------------- | -------- | -------- | ---------------------------------------------------------------------------- |
+    | `id`                | `string` | readonly | The session's id.                                                            |
+    | `survey`            | `string` | required | The survey's id.                                                             |
+    
+    # Examples
+
+    ## Create Session
+
+    To create a session, `POST` the following to `/api/sessions`:  
+
+    ``` javascript
+    // POST /api/sessions
+    {  
+        "survey": "ZL9AOn3"
+    }
+
+    // HTTP 201 Created
+    {
+        "id": "vrzkOzD",
+        "code": 1798,
+        "survey": "ZL9AOn3"
+    }
+    ```
+    ## List Sessions
+
+    You can list all your sessions for a specific survey by `GET /api/sessions`.  
+
+    ``` javascript
+    // GET /api/sessions
+
+    // HTTP 200 OK
+    {
+        "count": 2,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "id": "vrzkOzD",
+                "code": 1798,
+                "survey": "ZL9AOn3"
+            },
+            {
+                "id": "Me6ePNq",
+                "code": 4081,
+                "survey": "Wl95e9L"
+            }
+        ]
+    }
+    ```
+    ## Fetch Session
+
+    To fetch a specific session for a specific survey, `GET /api/sessions/<session_id>`. 
+
+    ``` javascript
+    // GET /api/sessions/vrzkOzD
+
+    // HTTP 200 OK
+    {
+        "id": "vrzkOzD",
+        "code": 4081,
+        "survey": "ZL9AOn3"
+    }
+    ```
     """
-    serializer_class = NestedSurveySessionSerializer
+    serializer_class = SurveySessionSerializer
     # we can change this later
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    parent_model_queryset = Survey.objects.all()
-    parent_pk_name = 'survey_pk'
-
     @handle_invalid_hashid('Survey')
     def get_queryset(self):
-        return SurveySession.objects\
-            .select_related('survey')\
-            .filter(survey=self.kwargs['survey_pk'])
+        return SurveySession.objects.filter(owner=self.request.user)
 
     def perform_create(self, serializer):
         code = random.randint(1000, 9999)
