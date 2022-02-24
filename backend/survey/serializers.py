@@ -368,7 +368,7 @@ class NestedSurveySubmissionSerializer(serializers.ModelSerializer):
         raise NotImplementedError('Updating a submission is not supported.')
 
 
-class NestedSurveySessionSerializer(serializers.ModelSerializer):
+class SurveySessionSerializer(serializers.ModelSerializer):
     id = HashidSerializerCharField(
         source_field='survey.Survey.id',
         read_only=True
