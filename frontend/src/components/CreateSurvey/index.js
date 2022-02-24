@@ -96,9 +96,9 @@ export default function CreateSurvey(props) {
 
   const [required, setRequired] = useState(false);
 
-  const [groupNum, setGroupNum] = useState(undefined);
+  const [groupNum, setGroupNum] = useState(1);
 
-  const [groupName, setGroupName] = useState('');
+  const [groupName, setGroupName] = useState('Group');
 
   const [grouped, setGrouped] = useState(false);
 
@@ -191,7 +191,6 @@ export default function CreateSurvey(props) {
       try {
         let num = e.target.value;
         if (num > 1) {
-          setGroupNum(num);
           if (grouped && num > 1)
             patchGroupChoices(letterGroup, groupName, num);
         } else {
@@ -384,10 +383,8 @@ export default function CreateSurvey(props) {
         if (res.status === 200) {
           let existingQuestions = [];
           let choices = [];
-          let groupPresent = false;
           res.data.forEach((q) => {
             if (q.type === 'DP') {
-              groupPresent = true;
               setGrouped(true);
               setGroupID(q.id);
               setGroupNum(q.choices.length);
@@ -411,10 +408,6 @@ export default function CreateSurvey(props) {
               });
             }
           });
-          if (!groupPresent) {
-            setGroupNum(1);
-            setGroupName('Group');
-          }
           setQuestions(existingQuestions);
         }
       });
@@ -714,10 +707,8 @@ export default function CreateSurvey(props) {
             type="number"
             min="1"
             max="30"
-            defaultValue={groupNum}
-            onKeyDown={(e) => {
-              if (e.key === 'e') e.preventDefault();
-            }}
+            value={groupNum}
+            onChange={e=>setGroupNum(e.target.value)}
             onBlur={(e) => updateGroupQuestionNum(e)}
             style={{
               minHeight: '10px',
@@ -733,9 +724,9 @@ export default function CreateSurvey(props) {
 
           <input
             type="text"
-            defaultValue={groupName}
+            value={groupName}
+            onChange={e=>setGroupName(e.target.value)}
             onBlur={(e) => {
-              setGroupName(e.target.value);
               patchGroupChoices(letterGroup, e.target.value, groupNum);
             }}
             style={{
