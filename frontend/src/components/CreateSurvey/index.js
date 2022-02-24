@@ -191,10 +191,15 @@ export default function CreateSurvey(props) {
           choices: groups,
         })
         .then((res) => {
-          if (res.status === 201) setGroupID(res.data.id);
+          if (res.status === 201) {
+            setGroupID(res.data.id);
+            axios.patch(`/api/surveys/${surveyID}/`,{"group_by_question":res.data.id});
+          }
+
         });
     } else {
       axios.delete(`/api/surveys/${surveyID}/questions/${groupID}/`);
+      axios.patch(`/api/surveys/${surveyID}/`,{"group_by_question":null})
     }
     setGrouped(!grouped);
   }
@@ -452,6 +457,7 @@ export default function CreateSurvey(props) {
           if (res.status === 200) {
             setTitle(res.data.title);
             setDescription(res.data.description);
+            setGroupID(res.data.group_by_question);
           }
         })
         .catch(() => {
@@ -466,7 +472,7 @@ export default function CreateSurvey(props) {
           res.data.forEach((q) => {
             if (q.type === 'DP') {
               setGrouped(true);
-              setGroupID(q.id);
+              // setGroupID(q.id);
               setGroupNum(q.choices.length);
               let tmp = q.choices[0].description;
               let cut = q.choices.length.toString.length + 1;
