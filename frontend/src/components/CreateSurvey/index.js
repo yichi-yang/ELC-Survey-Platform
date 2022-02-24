@@ -15,7 +15,7 @@ import Switch from '@mui/material/Switch';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Alert from './Alert';
-import { TextField } from '@mui/material';
+import RankQuestion from './Ranking';
 
 export default function CreateSurvey(props) {
   const navigate = useNavigate();
@@ -75,9 +75,31 @@ export default function CreateSurvey(props) {
     fontWeight: 'bold',
   };
 
+  const groupInput = {
+    minHeight: '10px',
+    width: '15%',
+    marginLeft: '1vw',
+    border: 'none',
+    borderBottom: 'solid 1px #C4C4C4',
+    color: '#C4C4C4',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  };
+
+  const rankInput = {
+    minHeight: '10px',
+    width: '30%',
+    marginLeft: '1vw',
+    border: 'none',
+    borderBottom: 'solid 1px #C4C4C4',
+    color: '#C4C4C4',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  };
+
   const [shouldRender, setUpdate] = useState(false);
 
-  const types = ['MC', 'CB', 'SA'];
+  const types = ['MC', 'CB', 'SA', 'RK'];
   function typeConverter(type) {
     for (let i = 0; i < types.length; i++) {
       if (types[i] === type) return i;
@@ -92,7 +114,7 @@ export default function CreateSurvey(props) {
 
   const [options, setOptions] = useState([]);
 
-  const [option, setOption] = useState('Add Option');
+  const [option, setOption] = useState('Add Option/Item');
 
   const [required, setRequired] = useState(false);
 
@@ -109,6 +131,11 @@ export default function CreateSurvey(props) {
   const [cancelAlertOpen, setCancelAlertOpen] = useState(false);
 
   const [createAlertOpen, setCreateAlertOpen] = useState(false);
+
+  const [rankMax, setRankMax] = useState(1.0);
+  const [rankMin, setRankMin] = useState(0.0);
+  const [rankStep, setRankStep] = useState(1.0);
+
   const iconButtonStyle = {
     margin: '0 0.5vw',
   };
@@ -206,8 +233,11 @@ export default function CreateSurvey(props) {
     setType(0);
     setQuestion('Question');
     setOptions([]);
-    setOption('Add Option');
+    setOption('Add Option/Item');
     setRequired(false);
+    setRankMax(1);
+    setRankMin(0);
+    setRankStep(1);
   }
 
   function updateTitle(e) {
@@ -239,7 +269,7 @@ export default function CreateSurvey(props) {
       });
   }
 
-  function appendQuestion(duplicate=false) {
+  function appendQuestion(duplicate = false) {
     let requestContent = {
       number: questions.length + 1 + grouped,
       title: question,
@@ -256,12 +286,26 @@ export default function CreateSurvey(props) {
         });
       }
 
+      let ma = rankMax;
+      let mi = rankMin;
+      let st = rankStep;
+
+      if (questionType !== 3) {
+        ma = undefined;
+        mi = undefined;
+        st = undefined;
+      }
+
       requestContent = {
         number: questions.length + 1,
         title: question,
         required: required,
         type: types[questionType],
         choices: parsedOptions,
+        range_min: mi,
+        range_max: ma,
+        range_step: st,
+        range_default: 1.0,
       };
     }
 
@@ -275,11 +319,15 @@ export default function CreateSurvey(props) {
             type: questionType,
             required: required,
             id: res.data.id,
+            range_min: rankMin,
+            range_max: rankMax,
+            range_step: rankStep,
           };
           setQuestions(questions.concat(newItem));
           if (!duplicate) {
             reset();
-            setNewQuestion(false);}
+            setNewQuestion(false);
+          }
         } else {
           //TODO: @shuyaoxie add alert maybe
         }
@@ -289,9 +337,9 @@ export default function CreateSurvey(props) {
   function listOptions(options, questionType) {
     return (
       <div>
-        {options.map((q) => {
+        {options.map((q, i) => {
           return (
-            <div style={{ margin: '5px' }}>
+            <div style={{ margin: '5px' }} key={i}>
               {questionType ? (
                 <CropSquareIcon fontSize="1%" />
               ) : (
@@ -338,9 +386,41 @@ export default function CreateSurvey(props) {
               ) : (
                 <div></div>
               )}
+
+              {q.type === 3 ? (
+                <RankQuestion
+                  key={q.id}
+                  min={q.range_min}
+                  max={q.range_max}
+                  step={q.range_step}
+                  items={q.options}
+                  disable={true}
+                />
+              ) : (
+                <div></div>
+              )}
             </div>
           );
         })}
+      </div>
+    );
+  }
+
+  function rankValues(stateValue, name, stateChange, maxi, mini) {
+    return (
+      <div style={{ margin: '1%' }}>
+        {name}:
+        <input
+          id={name}
+          type="number"
+          value={stateValue}
+          onChange={(e) => {
+            if (e.target.value) stateChange(parseFloat(e.target.value));
+          }}
+          max={maxi}
+          min={mini}
+          style={rankInput}
+        />
       </div>
     );
   }
@@ -405,6 +485,9 @@ export default function CreateSurvey(props) {
                 type: typeConverter(q.type),
                 required: q.required,
                 id: q.id,
+                range_max: q.range_max,
+                range_min: q.range_min,
+                range_step: q.range_step,
               });
             }
           });
@@ -560,17 +643,30 @@ export default function CreateSurvey(props) {
                   <MenuItem value={0}>Multiple Choice</MenuItem>
                   <MenuItem value={1}>Selection</MenuItem>
                   <MenuItem value={2}>Short Answer</MenuItem>
+                  <MenuItem value={3}>Ranking</MenuItem>
                   {/* <MenuItem value={3}>Grid</MenuItem> */}
                 </Select>
               </FormControl>
             </div>
 
-            {questionType === 0 || questionType === 1 ? (
+            {questionType === 0 || questionType === 1 || questionType === 3 ? (
               <div>
-                {options.map((q) => {
+                {questionType === 3 ? (
+                  <div
+                    style={{ display: 'flex', width: '85%', fontSize: '1.2vw' }}
+                  >
+                    {rankValues(rankMin, 'Minimum', setRankMin, rankMax, '')}
+                    {rankValues(rankMax, 'Maximum', setRankMax, '', rankMin)}
+                    {rankValues(rankStep, 'Step', setRankStep, '', 1)}
+                  </div>
+                ) : (
+                  <div></div>
+                )}
+
+                {options.map((q, i) => {
                   return (
-                    <div style={{ margin: '5px', fontSize: '1.2vw' }}>
-                      {questionType ? (
+                    <div style={{ margin: '5px', fontSize: '1.2vw' }} key={i}>
+                      {questionType === 1 ? (
                         <CropSquareIcon fontSize="1%" />
                       ) : (
                         <CircleOutlinedIcon fontSize="1%" />
@@ -590,7 +686,7 @@ export default function CreateSurvey(props) {
                     alignItems: 'center',
                   }}
                 >
-                  {questionType ? (
+                  {questionType === 1 ? (
                     <SquareIcon fontSize="1vw" />
                   ) : (
                     <CircleIcon fontSize="1vw" />
@@ -602,7 +698,7 @@ export default function CreateSurvey(props) {
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && option !== '') {
                         setOptions(options.concat(option));
-                        setOption('Add Option');
+                        setOption('');
                       }
                     }}
                     style={{
@@ -708,37 +804,19 @@ export default function CreateSurvey(props) {
             min="1"
             max="30"
             value={groupNum}
-            onChange={e=>setGroupNum(e.target.value)}
+            onChange={(e) => setGroupNum(e.target.value)}
             onBlur={(e) => updateGroupQuestionNum(e)}
-            style={{
-              minHeight: '10px',
-              width: '12%',
-              marginLeft: '1vw',
-              border: 'none',
-              borderBottom: 'solid 1px #C4C4C4',
-              color: '#C4C4C4',
-              fontWeight: 'bold',
-              textAlign: 'center',
-            }}
+            style={groupInput}
           />
 
           <input
             type="text"
             value={groupName}
-            onChange={e=>setGroupName(e.target.value)}
+            onChange={(e) => setGroupName(e.target.value)}
             onBlur={(e) => {
               patchGroupChoices(letterGroup, e.target.value, groupNum);
             }}
-            style={{
-              minHeight: '10px',
-              marginLeft: '1vw',
-              width: '15%',
-              border: 'none',
-              borderBottom: 'solid 1px #C4C4C4',
-              color: '#C4C4C4',
-              fontWeight: 'bold',
-              textAlign: 'center',
-            }}
+            style={groupInput}
           />
           <Switch
             checked={grouped}
