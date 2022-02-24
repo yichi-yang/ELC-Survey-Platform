@@ -238,6 +238,10 @@ class SurveyViewSet(viewsets.ModelViewSet):
 
     // HTTP 204 No Content
     ```
+
+    # Related Endpoints
+
+    To access a survey's questions, use `/api/surveys/<id>/questions/`.
     """
     serializer_class = SurveySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -795,7 +799,7 @@ class NestedSurveyQuestionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
     """
     serializer_class = NestedSurveyQuestionSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
-    pagination_class = None # disable pagination
+    pagination_class = None  # disable pagination
 
     # NestedViewMixIn will set
     # self.parent_instance = Survey.objects.get(pk=self.kwargs['survey_pk'])
@@ -839,28 +843,31 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
             .filter(survey=self.kwargs['survey_pk'])\
             .prefetch_related('responses')
 
-class SurveySessionViewSet(mixins.CreateModelMixin, 
-                   mixins.RetrieveModelMixin, 
-                   mixins.DestroyModelMixin,
-                   mixins.ListModelMixin,
-                   viewsets.GenericViewSet):
+
+class SurveySessionViewSet(mixins.CreateModelMixin,
+                           mixins.RetrieveModelMixin,
+                           mixins.DestroyModelMixin,
+                           mixins.ListModelMixin,
+                           viewsets.GenericViewSet):
     """
     API endpoint that allows survey sessions to be created or viewed.
+
     # Field Description
 
-    | Field               | Type     |          | Description                                                                  |
-    | ------------------- | -------- | -------- | ---------------------------------------------------------------------------- |
-    | `id`                | `string` | readonly | The session's id.                                                            |
-    | `survey`            | `string` | required | The survey's id.                                                             |
-    
+    | Field    | Type     |          | Description                |
+    | -------- | -------- | -------- | -------------------------- |
+    | `id`     | `string` | readonly | The session's id.          |
+    | `code`   | `int`    | readonly | The session's unique code. |
+    | `survey` | `string` | required | The survey's id.           |
+
     # Examples
 
     ## Create Session
 
-    To create a session, `POST` the following to `/api/sessions`:  
+    To create a session, `POST` the following to `/api/sessions/`:  
 
     ``` javascript
-    // POST /api/sessions
+    // POST /api/sessions/
     {  
         "survey": "ZL9AOn3"
     }
@@ -872,12 +879,15 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
         "survey": "ZL9AOn3"
     }
     ```
+
     ## List Sessions
 
-    You can list all your sessions for a specific survey by `GET /api/sessions`.  
+    You can list all your sessions for a specific survey by `GET /api/sessions/`. 
+
+    > Note: You'll only see sessions created by you (the current user). 
 
     ``` javascript
-    // GET /api/sessions
+    // GET /api/sessions/
 
     // HTTP 200 OK
     {
@@ -898,12 +908,34 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
         ]
     }
     ```
-    ## Fetch Session
 
-    To fetch a specific session for a specific survey, `GET /api/sessions/<session_id>`. 
+    You can also filter by `survey`. This is useful if you want to find out if
+    a session already exists for a specific survey.
 
     ``` javascript
-    // GET /api/sessions/vrzkOzD
+    // GET /api/sessions/?survey=Wl95e9L
+
+    // HTTP 200 OK
+    {
+        "count": 1,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "id": "Me6ePNq",
+                "code": 4081,
+                "survey": "Wl95e9L"
+            }
+        ]
+    }
+    ```
+
+    ## Fetch Session
+
+    To fetch a specific session for a specific survey, `GET /api/sessions/<session_id>/`.
+
+    ``` javascript
+    // GET /api/sessions/vrzkOzD/
 
     // HTTP 200 OK
     {
@@ -912,6 +944,20 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
         "survey": "ZL9AOn3"
     }
     ```
+
+    ## Delete Session
+
+    To delete a session and all its responses, `DELETE /api/sessions/<session_id>/`.
+
+    ``` javascript
+    // DELETE /api/sessions/vrzkOzD/
+
+    // 204 No Content
+    ```
+
+    # Related Endpoints
+
+    To do reverse lookups using `code`, see [code to session endpoint](/api/code/).
     """
     serializer_class = SurveySessionSerializer
     # we can change this later
@@ -919,10 +965,54 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
 
     @handle_invalid_hashid('Survey')
     def get_queryset(self):
-        return SurveySession.objects.filter(owner=self.request.user)
+        queryset = SurveySession.objects.filter(owner=self.request.user.id)
+
+        survey = self.request.query_params.get('survey')
+        if survey is not None:
+            queryset = queryset.filter(survey=survey)
+
+        return queryset
 
     def perform_create(self, serializer):
         code = random.randint(1000, 9999)
         while SurveySession.objects.filter(code=code).exists():
             code = random.randint(1000, 9999)
         serializer.save(code=code)
+
+
+class CodeToSessionViewSet(mixins.RetrieveModelMixin,
+                           mixins.ListModelMixin,
+                           viewsets.GenericViewSet):
+    """
+    API endpoint that looks up a SurveySession by its `code`.
+
+    # Field Description
+
+    See [survey session endpoint](/api/sessions/).
+
+    # Examples
+
+    ## Lookup Session by Code
+
+    To fetch the session with a specific code, `GET /api/code/<code>/`.
+
+    ``` javascript
+    // GET /api/code/1234/
+
+    // HTTP 200 OK
+    {
+        "id": "Dy07DNq",
+        "code": 1234,
+        "survey": "Wl95e9L"
+    }
+    ```
+
+    # Related Endpoints
+
+    To create, fetch, list, delete sessions, see [survey session endpoint](/api/sessions/).
+
+    """
+    serializer_class = SurveySessionSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    queryset = SurveySession.objects.all()
+    lookup_field = 'code'
