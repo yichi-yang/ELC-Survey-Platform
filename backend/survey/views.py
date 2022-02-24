@@ -795,7 +795,7 @@ class NestedSurveyQuestionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
     """
     serializer_class = NestedSurveyQuestionSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
-    pagination_class = None # disable pagination
+    pagination_class = None  # disable pagination
 
     # NestedViewMixIn will set
     # self.parent_instance = Survey.objects.get(pk=self.kwargs['survey_pk'])
@@ -862,3 +862,37 @@ class NestedSurveySessionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
         while SurveySession.objects.filter(code=code).exists():
             code = random.randint(1000, 9999)
         serializer.save(code=code)
+
+
+class CodeToSessionViewSet(mixins.RetrieveModelMixin,
+                           mixins.ListModelMixin,
+                           viewsets.GenericViewSet):
+    """
+    API endpoint that looks up a SurveySession by its `code`.
+
+    # Field Description
+
+    See [SurveySession](/api/sessions/).
+
+    # Examples
+
+    ## Lookup Session by Code
+
+    To fetch the session with a specific code, `GET /api/code/<code>/`.
+
+    ``` javascript
+    // GET /api/code/1234/
+
+    // HTTP 200 OK
+    {
+        "id": "Dy07DNq",
+        "code": 1234,
+        "survey": "Wl95e9L"
+    }
+
+    ```
+    """
+    serializer_class = NestedSurveySessionSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    queryset = SurveySession.objects.all()
+    lookup_field = 'code'
