@@ -72,6 +72,8 @@ export default function SurveyPage(surveyID) {
     const [room, setRoom] = useState('');
     /* Other Questions */
     const [questionList , setQuestionList] = useState([]);
+    /* Checkbox Questions */
+    const [checkBoxChoices , setCheckBoxChoices] = useState(0);
     const handleRoomChange = (event) => {
         setRoom(event.target.value);
     };
@@ -88,19 +90,40 @@ export default function SurveyPage(surveyID) {
     };
     const { op1, op2, op3 } = checked;
 
-    /*
+    const [checkList, setCheckList] = useState([])
+    const newHandleCheckChange = (event) => {
+        let temp = checkList;
+        temp[event.target.name] = event.target.checked;
+        setCheckList([...temp]);
+    };
+
+    
     // 测试state用
     useEffect(() => {
         console.log("最新值")
-        console.log(questionList)
-    }, [questionList])
-    */
+        console.log(checkBoxChoices)
+        let temporary = []
+        for (var i = 0; i < checkBoxChoices; i++) {
+            console.log('questionList');
+            console.log(questionList);
+            temporary.push(false)
+        }
+        setCheckList([...temporary])
+    }, [checkBoxChoices])
 
     useEffect(() => {
-        fetch(`/api/surveys/${surveyID}/`)
+        console.log("checkList最新值")
+        console.log(checkList)
+    }, [checkList])
+
+    
+    
+
+    useEffect(() => {
+        fetch(`/api/surveys/y09dl9W/`)
             .then(response => response.json())
             .then(surveyInfo => setTitle(surveyInfo.title));
-        fetch(`/api/surveys/${surveyID}/questions/`)
+        fetch(`/api/surveys/y09dl9W/questions/`)
             .then(response => response.json())
             .then(data => data.map((question) => {
                 /* Room Number Generator */
@@ -109,13 +132,19 @@ export default function SurveyPage(surveyID) {
                     question.choices.map((choice) => {
                         room_array.push(choice.value)
                     });
-                    setRoomList([...room_array])
+                    setRoomList([...room_array]);
                 }
                 /* Store Json into questionList */
                 else {
                     setQuestionList(questionList => { 
                         return[...questionList, question]
                     })
+                }
+
+                /* Check box choices Counter */
+                if (question.type === 'CB') {
+                    let total = checkBoxChoices + question.choices.length;
+                    setCheckBoxChoices(total);
                 }
             }));
     }, []);
@@ -152,6 +181,7 @@ export default function SurveyPage(surveyID) {
                     {questionList.map((q) => {
                         if (q.type === 'MC') {
                             return (
+                                <div style={questionMargin}>
                                 <FormControl>
                                     <div>Question {q.number}. {q.title}</div>
                                     <RadioGroup
@@ -166,6 +196,31 @@ export default function SurveyPage(surveyID) {
                                         })}
                                     </RadioGroup>
                                 </FormControl>
+                                </div>
+                            );
+                        }
+                        else if (q.type === 'CB') {
+                            return (
+                                <div style={questionMargin}>
+                                    <FormControl component="fieldset" variant="standard">
+                                    <   div>Question {q.number}. {q.title}</div>
+                                        <FormLabel component="legend">You may select more than one options</FormLabel>
+                                        <FormGroup>
+                                            {
+                                            q.choices.map((c, index) => {
+                                            console.log(index)
+                                            return (
+                                                <FormControlLabel
+                                                    control={
+                                                        <Checkbox checked={checkList[index]} onChange={newHandleCheckChange} name={index} />
+                                                    }
+                                                    label={c.description}
+                                                />
+                                            );
+                                        })}
+                                        </FormGroup>
+                                    </FormControl>
+                                </div>
                             );
                         }
                     })}
