@@ -4,7 +4,6 @@ from django.utils.translation import gettext_lazy as _
 from hashid_field import HashidAutoField
 from .utils import build_auto_salt
 from django.core.validators import MinValueValidator
-from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 
@@ -57,7 +56,7 @@ class SurveySession(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'SurveySession survey={self.survey.id} code={self.code}'
+        return f'SurveySession id={self.id} survey={self.survey.id} code={self.code}'
 
     class Meta:
         unique_together = ('survey', 'owner')
@@ -99,6 +98,27 @@ class SurveyQuestion(models.Model):
     def __str__(self):
         return f'SurveyQuestion id={self.id} survey={self.survey.id} title={self.title!r}'
 
+    @property
+    def min_responses(self):
+        """ The minimal number of response if the question is required. """
+        if self.type == SurveyQuestion.QuestionType.RANKING.value:
+            return self.choices.count()
+        return 1
+
+    @property
+    def max_responses(self):
+        """ The maximum number of response if the question is required. """
+        if self.allow_multiple_responses:
+            return self.choices.count()
+        return 1
+
+    @property
+    def allow_multiple_responses(self):
+        return self.type in [
+            SurveyQuestion.QuestionType.CHECKBOXES.value,
+            SurveyQuestion.QuestionType.RANKING.value,
+        ]
+
 
 class SurveyQuestionChoice(models.Model):
 
@@ -125,12 +145,6 @@ class SurveySubmission(models.Model):
         salt=build_auto_salt('SurveySubmission')
     )
     session = models.ForeignKey(SurveySession, on_delete=models.CASCADE)
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True
-    )
     submission_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

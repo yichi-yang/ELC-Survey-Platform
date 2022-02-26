@@ -2,7 +2,6 @@ from django.db.models import QuerySet
 from rest_framework import viewsets, mixins, status
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from rest_framework.exceptions import ValidationError
 from .models import Survey, SurveyQuestion, SurveyQuestionChoice, SurveySubmission
 from .serializers import (
     SurveySerializer,
@@ -12,10 +11,7 @@ from .serializers import (
 )
 from .models import Survey, SurveyQuestion, SurveySubmission, SurveySession
 from .utils import handle_invalid_hashid, query_param_to_bool
-from .permissions import (
-    IsParentSurveyOwner,
-    CreateOnlyWhenParentSurveyActive
-)
+from .permissions import IsAuthenticatedOrCreateOnly
 from .exceptions import BadQueryParameter
 import random
 from rest_framework.decorators import action
@@ -23,10 +19,13 @@ from rest_framework.response import Response
 
 # creates another instance of a model with all the same fields
 # except for id
-def duplicateModel(instance):
+
+
+def duplicate_instance(instance):
     instance.pk = None
     instance._state.adding = True
     instance.save()
+
 
 class NestedViewMixIn:
     """
@@ -277,19 +276,19 @@ class SurveyViewSet(viewsets.ModelViewSet):
     def duplicate(self, request, pk=None):
         survey = self.get_object()
         id = survey.id
-        duplicateModel(survey)
+        duplicate_instance(survey)
 
         questions = SurveyQuestion.objects.filter(survey=id).all()
 
         for q in questions:
             q_id = q.id
             q.survey = survey
-            duplicateModel(q)
+            duplicate_instance(q)
 
             choices = SurveyQuestionChoice.objects.filter(question=q_id).all()
             for c in choices:
                 c.question = q
-                duplicateModel(c)
+                duplicate_instance(c)
 
         return Response(SurveySerializer(instance=survey).data, status=status.HTTP_201_CREATED)
 
@@ -873,21 +872,18 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
     Editing a submission is not supported.
     """
     serializer_class = NestedSurveySubmissionSerializer
-    permission_classes = [
-        IsParentSurveyOwner | CreateOnlyWhenParentSurveyActive
-    ]
+    permission_classes = [IsAuthenticatedOrCreateOnly]
 
     # NestedViewMixIn will set
     # self.parent_instance = Survey.objects.get(pk=self.kwargs['survey_pk'])
     # before .get, .post, etc. are called.
-    parent_model_queryset = Survey.objects.all()
-    parent_pk_name = 'survey_pk'
+    parent_model_queryset = SurveySession.objects.all()
+    parent_pk_name = 'session_pk'
 
     @handle_invalid_hashid('Survey')
     def get_queryset(self):
         return SurveySubmission.objects\
-            .select_related('survey')\
-            .filter(survey=self.kwargs['survey_pk'])\
+            .filter(session=self.kwargs['session_pk'])\
             .prefetch_related('responses')
 
 
@@ -1012,7 +1008,11 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
 
     @handle_invalid_hashid('Survey')
     def get_queryset(self):
-        queryset = SurveySession.objects.filter(owner=self.request.user.id)
+        queryset = SurveySession.objects.all()
+
+        # hide other users' sessions when listing
+        if self.action == 'list':
+            queryset = queryset.filter(owner=self.request.user.id)
 
         survey = self.request.query_params.get('survey')
         if survey is not None:
@@ -1021,10 +1021,15 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
         return queryset
 
     def perform_create(self, serializer):
-        code = random.randint(1000, 9999)
-        while SurveySession.objects.filter(code=code).exists():
-            code = random.randint(1000, 9999)
-        serializer.save(code=code)
+        min_val, max_val = 1000, 10000
+        while True:
+            for _ in range(10):
+                code = random.randint(min_val, max_val - 1)
+                if not SurveySession.objects.filter(code=code).exists():
+                    serializer.save(code=code)
+                    return
+            min_val *= 10
+            max_val *= 10
 
 
 class CodeToSessionViewSet(mixins.RetrieveModelMixin,

@@ -1,0 +1,278 @@
+[
+    {
+        "model": "survey.survey",
+        "pk": "y09dl9W",
+        "fields": {
+            "title": "Test Survey",
+            "description": "Very interesting description",
+            "draft": true,
+            "group_by_question": null,
+            "created_at": "2022-02-19T04:52:35.643Z"
+        }
+    },
+    {
+        "model": "survey.surveysession",
+        "pk": "Dy07DNq",
+        "fields": {
+            "code": 1677,
+            "survey": "y09dl9W",
+            "owner": 1,
+            "created_at": "2022-02-26T05:42:58.111Z"
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "yO5lED9",
+        "fields": {
+            "survey": "y09dl9W",
+            "number": 1,
+            "title": "Which is better?",
+            "required": true,
+            "type": "MC",
+            "range_min": null,
+            "range_max": null,
+            "range_default": null,
+            "range_step": null
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "R7jNpDG",
+        "fields": {
+            "survey": "y09dl9W",
+            "number": 2,
+            "title": "Select all valid statements.",
+            "required": true,
+            "type": "CB",
+            "range_min": null,
+            "range_max": null,
+            "range_default": null,
+            "range_step": null
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "dBjywDL",
+        "fields": {
+            "survey": "y09dl9W",
+            "number": 3,
+            "title": "Which breakout room are you in?",
+            "required": true,
+            "type": "DP",
+            "range_min": null,
+            "range_max": null,
+            "range_default": null,
+            "range_step": null
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "Lo5MY5R",
+        "fields": {
+            "survey": "y09dl9W",
+            "number": 4,
+            "title": "From 1 to 10, how's your day going?",
+            "required": true,
+            "type": "SC",
+            "range_min": 1.0,
+            "range_max": 10.0,
+            "range_default": 5.0,
+            "range_step": 1.0
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "GajwyDE",
+        "fields": {
+            "survey": "y09dl9W",
+            "number": 5,
+            "title": "What is your favorite fruit?",
+            "required": true,
+            "type": "SA",
+            "range_min": null,
+            "range_max": null,
+            "range_default": null,
+            "range_step": null
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "O2VeYVd",
+        "fields": {
+            "survey": "y09dl9W",
+            "number": 6,
+            "title": "Describe the city you live in.",
+            "required": true,
+            "type": "PA",
+            "range_min": null,
+            "range_max": null,
+            "range_default": null,
+            "range_step": null
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "vQVx1jW",
+        "fields": {
+            "survey": "y09dl9W",
+            "number": 7,
+            "title": "Please rank the following roles:",
+            "required": true,
+            "type": "RK",
+            "range_min": 1.0,
+            "range_max": 5.0,
+            "range_default": 1.0,
+            "range_step": 1.0
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "GrjLWV2",
+        "fields": {
+            "survey": "y09dl9W",
+            "number": 8,
+            "title": "You don't have to answer this.",
+            "required": false,
+            "type": "SA",
+            "range_min": null,
+            "range_max": null,
+            "range_default": null,
+            "range_step": null
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "m2OkayZ",
+        "fields": {
+            "question": "yO5lED9",
+            "value": "A",
+            "description": "Star Trek"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "WKo1dyZ",
+        "fields": {
+            "question": "yO5lED9",
+            "value": "B",
+            "description": "Star Wars"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "GDOaMOj",
+        "fields": {
+            "question": "R7jNpDG",
+            "value": "A",
+            "description": "1 + 1 = 2"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "LjyRko9",
+        "fields": {
+            "question": "R7jNpDG",
+            "value": "B",
+            "description": "1 + 2 = 3"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "D9NXgO6",
+        "fields": {
+            "question": "R7jNpDG",
+            "value": "C",
+            "description": "1 - 1 = 1"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "M9O2bOA",
+        "fields": {
+            "question": "dBjywDL",
+            "value": "1",
+            "description": "breakout room 1"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "wKoPloR",
+        "fields": {
+            "question": "dBjywDL",
+            "value": "2",
+            "description": "breakout room 2"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "MgyreN6",
+        "fields": {
+            "question": "dBjywDL",
+            "value": "3",
+            "description": "breakout room 3"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "0vNLJol",
+        "fields": {
+            "question": "dBjywDL",
+            "value": "4",
+            "description": "breakout room 4"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "B4OBvO2",
+        "fields": {
+            "question": "dBjywDL",
+            "value": "5",
+            "description": "breakout room 5"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "eMNVmOD",
+        "fields": {
+            "question": "vQVx1jW",
+            "value": "A",
+            "description": "CEO"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "wGo71N5",
+        "fields": {
+            "question": "vQVx1jW",
+            "value": "B",
+            "description": "CFO"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "DMNxbo0",
+        "fields": {
+            "question": "vQVx1jW",
+            "value": "C",
+            "description": "COO"
+        }
+    },
+    {
+        "model": "auth.user",
+        "pk": 1,
+        "fields": {
+            "password": "!5xUXDroQgl4z35tApqJ4tBxUQiOrzFNOnttGfGma",
+            "last_login": null,
+            "is_superuser": false,
+            "username": "test",
+            "first_name": "",
+            "last_name": "",
+            "email": "",
+            "is_staff": false,
+            "is_active": true,
+            "date_joined": "2022-02-26T05:37:31.134Z",
+            "groups": [],
+            "user_permissions": []
+        }
+    }
+]
