@@ -265,7 +265,7 @@ const AlertDialogRelease =(props)=> {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Decline</Button>
-          <Button href="released" autoFocus>
+          <Button href={`released/${props.id}`} autoFocus>
             Confirm
           </Button>
         </DialogActions>
@@ -295,7 +295,7 @@ const SurveyBar = (props) => {
           <Button variant="contained" size="small" style={{ background: '#990000'}}>View</Button>
         </Grid>
         <Grid item xs={1.2}>
-          <AlertDialogRelease name="Release"/>
+          <AlertDialogRelease name="Release" id={props.id}/>
         </Grid>
       </Grid>
     );
@@ -304,6 +304,7 @@ const SurveyBar = (props) => {
 
 export default function AdminTemplate(){
   const [surveyName, setsurveyName] = useState([]);
+  const [surveyId, setSurveyId] = useState([]); 
   React.useEffect(() => {
   axios
    .get('/api/surveys/')
@@ -314,8 +315,10 @@ export default function AdminTemplate(){
         let idList = [];
         res.data.results.forEach((q) => {
           nameList.push(q.title);
+          idList.push(q.id);
         });
         setsurveyName(nameList);
+        setSurveyId(idList);
       }
     }
     }).catch((error) => { console.log(error) });
@@ -342,11 +345,11 @@ export default function AdminTemplate(){
         </Search>
       </Grid>
 
-      {surveyName.map((name) => (
+      {surveyName.map((name,index) => (
         <Grid container style={{marginTop:'1.5vw'}}>
           <Grid item xs={1.5}></Grid>
           <Grid item xs={10.5}>
-            <SurveyBar name={name}/>
+            <SurveyBar name={name} id={surveyId[index]}/>
           </Grid>
         </Grid>
       ))}

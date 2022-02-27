@@ -18,7 +18,7 @@ function App() {
         <Route path="/survey" element={<SurveyPage/>}/>
         <Route path="/admin/create_survey" element={<CreateSurvey/>}/>
         <Route path="/template" element={<AdminTemplate/>}/>
-        <Route path="/released" element={<FormReleased/>}/>
+        <Route path="/released/:id" element={<FormReleased/>}/>
       </Routes>
     </div>
   );
