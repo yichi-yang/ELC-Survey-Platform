@@ -8,6 +8,7 @@ import RadioGroup from '@mui/material/RadioGroup';
 import Radio from '@mui/material/Radio';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Button from '@material-ui/core/Button';
+import axios from 'axios';
 import TextField from '@mui/material/TextField';
 import FormGroup from '@mui/material/FormGroup';
 import Checkbox from '@mui/material/Checkbox';
@@ -93,6 +94,7 @@ export default function SurveyPage() {
     };
     const { op1, op2, op3 } = checked;
 
+    /* Checkbox State in array */
     const [checkList, setCheckList] = useState([])
     const newHandleCheckChange = (event) => {
         let temp = checkList;
@@ -103,12 +105,12 @@ export default function SurveyPage() {
     
     // 测试state用
     useEffect(() => {
-        console.log("最新值")
-        console.log(checkBoxChoices)
+        //console.log("最新值")
+        //console.log(checkBoxChoices)
         let temporary = []
         for (var i = 0; i < checkBoxChoices; i++) {
-            console.log('questionList');
-            console.log(questionList);
+            //console.log('questionList');
+            //console.log(questionList);
             temporary.push(false)
         }
         setCheckList([...temporary])
@@ -123,12 +125,12 @@ export default function SurveyPage() {
     
 
     useEffect(() => {
-        fetch(`/api/surveys/y09dl9W/`)
-            .then(response => response.json())
-            .then(surveyInfo => setTitle(surveyInfo.title));
-        fetch(`/api/surveys/y09dl9W/questions/`)
-            .then(response => response.json())
-            .then(data => data.map((question) => {
+        axios
+            .get(`/api/surveys/${surveyID}/`)
+            .then((res) => { setTitle(res.data.title)})
+        axios
+            .get(`/api/surveys/${surveyID}/questions/`)
+            .then((res) => res.data.map((question) => {
                 /* Room Number Generator */
                 let room_array = [];
                 if (question.type === 'DP') {
@@ -211,7 +213,6 @@ export default function SurveyPage() {
                                         <FormGroup>
                                             {
                                             q.choices.map((c, index) => {
-                                            console.log(index)
                                             return (
                                                 <FormControlLabel
                                                     control={
