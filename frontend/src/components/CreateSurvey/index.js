@@ -34,6 +34,7 @@ export default function CreateSurvey(props) {
     justifyContent: 'center',
     alignItems: 'center',
     top: '0',
+    zIndex: '99'
   };
 
   const headingButtons = {
@@ -432,7 +433,7 @@ export default function CreateSurvey(props) {
 
   const [surveyID, setSurveyID] = useState(localStorage.getItem('surveyID'));
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (surveyID === null || surveyID === 'null') {
       setTitle('Untitled Survey');
       axios

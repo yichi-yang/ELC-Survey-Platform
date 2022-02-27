@@ -7,6 +7,7 @@ import SurveyPage from './components/SurveyPage'
 import {AdminTemplate} from './components/AdminTemplate';
 import CreateSurvey from './components/CreateSurvey';
 import FormReleased from './components/FormReleased';
+import SurveyResult from './components/SurveyResult';
 
 function App() {
   return (
@@ -15,10 +16,11 @@ function App() {
         <Route path="/"  element={<StartPage/>}/>
         <Route path="/student" element={<StudentLogIn/>}/>
         <Route path="/admin" element={<AdminLogIn/>}/>
-        <Route path="/survey" element={<SurveyPage/>}/>
+        <Route path="/survey/:surveyID" element={<SurveyPage/>}/>
         <Route path="/admin/create_survey" element={<CreateSurvey/>}/>
         <Route path="/template" element={<AdminTemplate/>}/>
-        <Route path="/released" element={<FormReleased/>}/>
+        <Route path="/released/:id" element={<FormReleased/>}/>
+        <Route path="/result/:surveyID" element={<SurveyResult/>}/>
       </Routes>
     </div>
   );

@@ -12,8 +12,11 @@ import TextField from '@mui/material/TextField';
 import FormGroup from '@mui/material/FormGroup';
 import Checkbox from '@mui/material/Checkbox';
 import { useState, useEffect } from 'react';
+import { useParams } from "react-router-dom";
 
-export default function SurveyPage(surveyID) {
+export default function SurveyPage() {
+
+    const {surveyID} = useParams();
 
     const bodyStyle = {
         display: 'flex',

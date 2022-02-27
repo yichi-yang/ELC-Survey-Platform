@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useEffect, useState } from 'react';
 import AppBar from '@mui/material/AppBar';
 import { styled, alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -21,6 +21,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import axios from 'axios';
 
 const pages = [];
 const settings = ['Logout'];
@@ -264,7 +265,7 @@ const AlertDialogRelease =(props)=> {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Decline</Button>
-          <Button href="released" autoFocus>
+          <Button href={`released/${props.id}`} autoFocus>
             Confirm
           </Button>
         </DialogActions>
@@ -294,7 +295,7 @@ const SurveyBar = (props) => {
           <Button variant="contained" size="small" style={{ background: '#990000'}}>View</Button>
         </Grid>
         <Grid item xs={1.2}>
-          <AlertDialogRelease name="Release"/>
+          <AlertDialogRelease name="Release" id={props.id}/>
         </Grid>
       </Grid>
     );
@@ -302,6 +303,27 @@ const SurveyBar = (props) => {
 
 
 export default function AdminTemplate(){
+  const [surveyName, setsurveyName] = useState([]);
+  const [surveyId, setSurveyId] = useState([]); 
+  React.useEffect(() => {
+  axios
+   .get('/api/surveys/')
+   .then((res) => {
+    if (res.status === 200) {
+      if(res.data.count>0){
+        let nameList = [];
+        let idList = [];
+        res.data.results.forEach((q) => {
+          nameList.push(q.title);
+          idList.push(q.id);
+        });
+        setsurveyName(nameList);
+        setSurveyId(idList);
+      }
+    }
+    }).catch((error) => { console.log(error) });
+  }, []);
+  console.log(surveyName)
   return(
     <Grid container rowSpacing={2}>
       <Grid item xs={12}>
@@ -323,11 +345,11 @@ export default function AdminTemplate(){
         </Search>
       </Grid>
 
-      {NAMES.map((name) => (
+      {surveyName.map((name,index) => (
         <Grid container style={{marginTop:'1.5vw'}}>
           <Grid item xs={1.5}></Grid>
           <Grid item xs={10.5}>
-            <SurveyBar name={name}/>
+            <SurveyBar name={name} id={surveyId[index]}/>
           </Grid>
         </Grid>
       ))}
