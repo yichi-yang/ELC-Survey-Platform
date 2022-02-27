@@ -8,6 +8,7 @@ import RadioGroup from '@mui/material/RadioGroup';
 import Radio from '@mui/material/Radio';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Button from '@material-ui/core/Button';
+import axios from 'axios';
 import TextField from '@mui/material/TextField';
 import FormGroup from '@mui/material/FormGroup';
 import Checkbox from '@mui/material/Checkbox';
@@ -75,6 +76,8 @@ export default function SurveyPage() {
     const [room, setRoom] = useState('');
     /* Other Questions */
     const [questionList , setQuestionList] = useState([]);
+    /* Checkbox Questions */
+    const [checkBoxChoices , setCheckBoxChoices] = useState(0);
     const handleRoomChange = (event) => {
         setRoom(event.target.value);
     };
@@ -91,34 +94,62 @@ export default function SurveyPage() {
     };
     const { op1, op2, op3 } = checked;
 
-    /*
+    /* Checkbox State in array */
+    const [checkList, setCheckList] = useState([])
+    const newHandleCheckChange = (event) => {
+        let temp = checkList;
+        temp[event.target.name] = event.target.checked;
+        setCheckList([...temp]);
+    };
+
+    
     // 测试state用
     useEffect(() => {
-        console.log("最新值")
-        console.log(questionList)
-    }, [questionList])
-    */
+        //console.log("最新值")
+        //console.log(checkBoxChoices)
+        let temporary = []
+        for (var i = 0; i < checkBoxChoices; i++) {
+            //console.log('questionList');
+            //console.log(questionList);
+            temporary.push(false)
+        }
+        setCheckList([...temporary])
+    }, [checkBoxChoices])
 
     useEffect(() => {
-        fetch(`/api/surveys/${surveyID}/`)
-            .then(response => response.json())
-            .then(surveyInfo => setTitle(surveyInfo.title));
-        fetch(`/api/surveys/${surveyID}/questions/`)
-            .then(response => response.json())
-            .then(data => data.map((question) => {
+        console.log("checkList最新值")
+        console.log(checkList)
+    }, [checkList])
+
+    
+    
+
+    useEffect(() => {
+        axios
+            .get(`/api/surveys/${surveyID}/`)
+            .then((res) => { setTitle(res.data.title)})
+        axios
+            .get(`/api/surveys/${surveyID}/questions/`)
+            .then((res) => res.data.map((question) => {
                 /* Room Number Generator */
                 let room_array = [];
                 if (question.type === 'DP') {
                     question.choices.map((choice) => {
                         room_array.push(choice.value)
                     });
-                    setRoomList([...room_array])
+                    setRoomList([...room_array]);
                 }
                 /* Store Json into questionList */
                 else {
                     setQuestionList(questionList => { 
                         return[...questionList, question]
                     })
+                }
+
+                /* Check box choices Counter */
+                if (question.type === 'CB') {
+                    let total = checkBoxChoices + question.choices.length;
+                    setCheckBoxChoices(total);
                 }
             }));
     }, []);
@@ -155,6 +186,7 @@ export default function SurveyPage() {
                     {questionList.map((q) => {
                         if (q.type === 'MC') {
                             return (
+                                <div style={questionMargin}>
                                 <FormControl>
                                     <div>Question {q.number}. {q.title}</div>
                                     <RadioGroup
@@ -169,6 +201,30 @@ export default function SurveyPage() {
                                         })}
                                     </RadioGroup>
                                 </FormControl>
+                                </div>
+                            );
+                        }
+                        else if (q.type === 'CB') {
+                            return (
+                                <div style={questionMargin}>
+                                    <FormControl component="fieldset" variant="standard">
+                                    <   div>Question {q.number}. {q.title}</div>
+                                        <FormLabel component="legend">You may select more than one options</FormLabel>
+                                        <FormGroup>
+                                            {
+                                            q.choices.map((c, index) => {
+                                            return (
+                                                <FormControlLabel
+                                                    control={
+                                                        <Checkbox checked={checkList[index]} onChange={newHandleCheckChange} name={index} />
+                                                    }
+                                                    label={c.description}
+                                                />
+                                            );
+                                        })}
+                                        </FormGroup>
+                                    </FormControl>
+                                </div>
                             );
                         }
                     })}
