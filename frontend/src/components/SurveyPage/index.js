@@ -14,6 +14,7 @@ import FormGroup from '@mui/material/FormGroup';
 import Checkbox from '@mui/material/Checkbox';
 import { useState, useEffect } from 'react';
 import { useParams } from "react-router-dom";
+import { DataObject } from "@mui/icons-material";
 
 export default function SurveyPage() {
 
@@ -102,12 +103,31 @@ export default function SurveyPage() {
     const newHandleCheckChange = (event) => {
         setCheckList(checkList => {
             let temp = [...checkList];
-            if (checkList.includes(event.target.name)) {
-                let index = checkList.indexOf(event.target.name);
+            let obj = {"question": event.target.name, "choice": event.target.value}
+            /* If the selected choice exist, remove it */
+            if (checkList.some(item => item.choice === event.target.value)) {
+                let index = checkList.findIndex(x => x.choice === event.target.value);
                 temp.splice(index, 1);
             }
             else {
-                temp.push(event.target.name)
+                temp.push(obj)
+            }
+            return temp;
+        });
+    };
+
+    const newHandleRaioChange = (event) => {
+        setCheckList(checkList => {
+            let temp = [...checkList];
+            let obj = {"question": event.target.id, "choice": event.target.value}
+            /* If choosing another option in the same multiple choice question, remove the existing option and then append the new option */
+            if (checkList.some(item => item.question === event.target.id)) {
+                let index = checkList.findIndex(x => x.question === event.target.id);
+                temp.splice(index, 1);
+                temp.push(obj)
+            }
+            else {
+                temp.push(obj)
             }
             return temp;
         });
@@ -206,7 +226,7 @@ export default function SurveyPage() {
                                     >
                                         {q.choices.map((c) => {
                                             return (
-                                                <FormControlLabel value={c.value} control={<Radio />} label={c.description} />
+                                                <FormControlLabel value={c.value} control={<Radio id={q.id} value={c.id} onChange={newHandleRaioChange}/>} label={c.description} />
                                             )
                                         })}
                                     </RadioGroup>
@@ -223,10 +243,11 @@ export default function SurveyPage() {
                                     <FormGroup>
                                         {
                                             q.choices.map((c, index) => {
+                                                let obj = {"question": q.id, "choice": c.id}
                                                 return (
                                                     <FormControlLabel
                                                         control={
-                                                            <Checkbox checked={checkList.includes(c.id)} onChange={newHandleCheckChange} name={c.id} />
+                                                            <Checkbox checked={checkList.some(item => item.choice === c.id)} onChange={newHandleCheckChange} name={q.id} value={c.id} />
                                                         }
                                                         label={c.description}
                                                     />
