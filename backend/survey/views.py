@@ -1,14 +1,14 @@
 from django.db.models import QuerySet
-from rest_framework import viewsets, mixins
+from rest_framework import viewsets, mixins, status
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import ValidationError
-from .models import Survey, SurveyQuestion, SurveySubmission
+from .models import Survey, SurveyQuestion, SurveyQuestionChoice, SurveySubmission
 from .serializers import (
     SurveySerializer,
     NestedSurveyQuestionSerializer,
     NestedSurveySubmissionSerializer,
-    NestedSurveySessionSerializer
+    SurveySessionSerializer
 )
 from .models import Survey, SurveyQuestion, SurveySubmission, SurveySession
 from .utils import handle_invalid_hashid, query_param_to_bool
@@ -18,7 +18,15 @@ from .permissions import (
 )
 from .exceptions import BadQueryParameter
 import random
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
+# creates another instance of a model with all the same fields
+# except for id
+def duplicateModel(instance):
+    instance.pk = None
+    instance._state.adding = True
+    instance.save()
 
 class NestedViewMixIn:
     """
@@ -238,9 +246,52 @@ class SurveyViewSet(viewsets.ModelViewSet):
 
     // HTTP 204 No Content
     ```
+
+    ## Duplicate Survey
+
+    To duplicate a specific survey, `POST /api/surveys/<id>/duplicate`.  
+
+    > Note: duplicating a survey also duplicates all associated questions and responses.  
+
+    ``` javascript
+    // POST /api/surveys/x5zMkQe/duplicate
+
+    // HTTP 201 CREATED
+    {
+        "id": "oxz3r94",
+        "title": "Survey Name",
+        "description": "New description",
+        "draft": true,
+        "group_by_question": null,
+        "created_at": "2022-02-14T02:01:16.168116Z"
+    }
+    ```
+    # Related Endpoints
+
+    To access a survey's questions, use `/api/surveys/<id>/questions/`.
     """
     serializer_class = SurveySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request, pk=None):
+        survey = self.get_object()
+        id = survey.id
+        duplicateModel(survey)
+
+        questions = SurveyQuestion.objects.filter(survey=id).all()
+
+        for q in questions:
+            q_id = q.id
+            q.survey = survey
+            duplicateModel(q)
+
+            choices = SurveyQuestionChoice.objects.filter(question=q_id).all()
+            for c in choices:
+                c.question = q
+                duplicateModel(c)
+
+        return Response(SurveySerializer(instance=survey).data, status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
         queryset = Survey.objects.all()
@@ -795,7 +846,7 @@ class NestedSurveyQuestionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
     """
     serializer_class = NestedSurveyQuestionSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
-    pagination_class = None # disable pagination
+    pagination_class = None  # disable pagination
 
     # NestedViewMixIn will set
     # self.parent_instance = Survey.objects.get(pk=self.kwargs['survey_pk'])
@@ -840,25 +891,175 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
             .prefetch_related('responses')
 
 
-class NestedSurveySessionViewSet(NestedViewMixIn, viewsets.ModelViewSet):
+class SurveySessionViewSet(mixins.CreateModelMixin,
+                           mixins.RetrieveModelMixin,
+                           mixins.DestroyModelMixin,
+                           mixins.ListModelMixin,
+                           viewsets.GenericViewSet):
     """
     API endpoint that allows survey sessions to be created or viewed.
+
+    # Field Description
+
+    | Field    | Type     |          | Description                |
+    | -------- | -------- | -------- | -------------------------- |
+    | `id`     | `string` | readonly | The session's id.          |
+    | `code`   | `int`    | readonly | The session's unique code. |
+    | `survey` | `string` | required | The survey's id.           |
+
+    # Examples
+
+    ## Create Session
+
+    To create a session, `POST` the following to `/api/sessions/`:  
+
+    ``` javascript
+    // POST /api/sessions/
+    {  
+        "survey": "ZL9AOn3"
+    }
+
+    // HTTP 201 Created
+    {
+        "id": "vrzkOzD",
+        "code": 1798,
+        "survey": "ZL9AOn3"
+    }
+    ```
+
+    ## List Sessions
+
+    You can list all your sessions for a specific survey by `GET /api/sessions/`. 
+
+    > Note: You'll only see sessions created by you (the current user). 
+
+    ``` javascript
+    // GET /api/sessions/
+
+    // HTTP 200 OK
+    {
+        "count": 2,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "id": "vrzkOzD",
+                "code": 1798,
+                "survey": "ZL9AOn3"
+            },
+            {
+                "id": "Me6ePNq",
+                "code": 4081,
+                "survey": "Wl95e9L"
+            }
+        ]
+    }
+    ```
+
+    You can also filter by `survey`. This is useful if you want to find out if
+    a session already exists for a specific survey.
+
+    ``` javascript
+    // GET /api/sessions/?survey=Wl95e9L
+
+    // HTTP 200 OK
+    {
+        "count": 1,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "id": "Me6ePNq",
+                "code": 4081,
+                "survey": "Wl95e9L"
+            }
+        ]
+    }
+    ```
+
+    ## Fetch Session
+
+    To fetch a specific session for a specific survey, `GET /api/sessions/<session_id>/`.
+
+    ``` javascript
+    // GET /api/sessions/vrzkOzD/
+
+    // HTTP 200 OK
+    {
+        "id": "vrzkOzD",
+        "code": 4081,
+        "survey": "ZL9AOn3"
+    }
+    ```
+
+    ## Delete Session
+
+    To delete a session and all its responses, `DELETE /api/sessions/<session_id>/`.
+
+    ``` javascript
+    // DELETE /api/sessions/vrzkOzD/
+
+    // 204 No Content
+    ```
+
+    # Related Endpoints
+
+    To do reverse lookups using `code`, see [code to session endpoint](/api/codes/).
     """
-    serializer_class = NestedSurveySessionSerializer
+    serializer_class = SurveySessionSerializer
     # we can change this later
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    parent_model_queryset = Survey.objects.all()
-    parent_pk_name = 'survey_pk'
-
     @handle_invalid_hashid('Survey')
     def get_queryset(self):
-        return SurveySession.objects\
-            .select_related('survey')\
-            .filter(survey=self.kwargs['survey_pk'])
+        queryset = SurveySession.objects.filter(owner=self.request.user.id)
+
+        survey = self.request.query_params.get('survey')
+        if survey is not None:
+            queryset = queryset.filter(survey=survey)
+
+        return queryset
 
     def perform_create(self, serializer):
         code = random.randint(1000, 9999)
         while SurveySession.objects.filter(code=code).exists():
             code = random.randint(1000, 9999)
         serializer.save(code=code)
+
+
+class CodeToSessionViewSet(mixins.RetrieveModelMixin,
+                           mixins.ListModelMixin,
+                           viewsets.GenericViewSet):
+    """
+    API endpoint that looks up a SurveySession by its `code`.
+
+    # Field Description
+
+    See [survey session endpoint](/api/sessions/).
+
+    # Examples
+
+    ## Lookup Session by Code
+
+    To fetch the session with a specific code, `GET /api/codes/<code>/`.
+
+    ``` javascript
+    // GET /api/codes/1234/
+
+    // HTTP 200 OK
+    {
+        "id": "Dy07DNq",
+        "code": 1234,
+        "survey": "Wl95e9L"
+    }
+    ```
+
+    # Related Endpoints
+
+    To create, fetch, list, delete sessions, see [survey session endpoint](/api/sessions/).
+
+    """
+    serializer_class = SurveySessionSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    queryset = SurveySession.objects.all()
+    lookup_field = 'code'

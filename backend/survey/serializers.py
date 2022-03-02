@@ -29,7 +29,8 @@ class SurveySerializer(serializers.ModelSerializer):
         pk_field=HashidSerializerCharField(
             source_field='survey.SurveyQuestion.id'),
         queryset=SurveyQuestion.objects.all(),
-        required=False
+        required=False,
+        allow_null=True
     )
 
     class Meta:
@@ -41,6 +42,9 @@ class SurveySerializer(serializers.ModelSerializer):
         """
         Check that the question belongs to current survey.
         """
+        if question is None:
+            return question
+
         if question.survey != self.instance:
             raise serializers.ValidationError(
                 "group_by_question doesn't belong to this survey"
@@ -368,7 +372,7 @@ class NestedSurveySubmissionSerializer(serializers.ModelSerializer):
         raise NotImplementedError('Updating a submission is not supported.')
 
 
-class NestedSurveySessionSerializer(serializers.ModelSerializer):
+class SurveySessionSerializer(serializers.ModelSerializer):
     id = HashidSerializerCharField(
         source_field='survey.Survey.id',
         read_only=True
@@ -378,7 +382,7 @@ class NestedSurveySessionSerializer(serializers.ModelSerializer):
         queryset=Survey.objects.all()
     )
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    code = serializers.IntegerField(allow_null=True)
+    #code = serializers.IntegerField(allow_null=True)
 
     class Meta:
         model = SurveySession
