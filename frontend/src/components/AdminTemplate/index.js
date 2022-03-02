@@ -22,6 +22,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const pages = [];
 const settings = ['Logout'];
@@ -314,8 +315,10 @@ export default function AdminTemplate(){
         let nameList = [];
         let idList = [];
         res.data.results.forEach((q) => {
-          nameList.push(q.title);
-          idList.push(q.id);
+          if(!q.draft){
+            nameList.push(q.title);
+            idList.push(q.id);
+          }
         });
         setsurveyName(nameList);
         setSurveyId(idList);
@@ -324,6 +327,7 @@ export default function AdminTemplate(){
     }).catch((error) => { console.log(error) });
   }, []);
   console.log(surveyName)
+  const navigate = useNavigate();
   return(
     <Grid container rowSpacing={2}>
       <Grid item xs={12}>
@@ -358,7 +362,14 @@ export default function AdminTemplate(){
       <Grid item xs={10}></Grid>
       <Grid item xs={2}>
 
-      <IconButton color="primary" aria-label="add to shopping cart" href='/admin/create_survey'>
+      <IconButton color="primary" aria-label="add to shopping cart" onClick={()=>{
+        if(localStorage.getItem('surveyID')!==null){
+          axios.delete(`/api/surveys/${localStorage.getItem('surveyID')}`).then(() => {
+            localStorage.setItem('surveyID','null');
+          });
+        }
+        navigate('/admin/create_survey');
+      }}>
 
         <AddCircleOutlineIcon style={{color:'#FFC72C'}} sx={{ fontSize: 80 }}/>
       </IconButton>

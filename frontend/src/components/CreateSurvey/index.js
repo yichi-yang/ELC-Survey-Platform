@@ -34,7 +34,7 @@ export default function CreateSurvey(props) {
     justifyContent: 'center',
     alignItems: 'center',
     top: '0',
-    zIndex: '99'
+    zIndex: '98'
   };
 
   const headingButtons = {
@@ -45,6 +45,7 @@ export default function CreateSurvey(props) {
     top: '10vh',
     backgroundColor: '#990000',
     paddingRight: '9vw',
+    zIndex: '99'
   };
 
   const editGround = {
@@ -161,8 +162,15 @@ export default function CreateSurvey(props) {
   }
 
   function createComplete() {
-    localStorage.removeItem('surveyID');
-    navigate('/template');
+    axios.patch(`/api/surveys/${surveyID}/`,{"draft": false}).then(res=>{
+      if(res.status===200){
+        localStorage.removeItem('surveyID');
+        navigate('/template');
+      }else{
+        // TODO: maybe refresh?
+      }
+    }
+    )
   }
 
   function groupChoices(letter, name, number) {
@@ -295,11 +303,13 @@ export default function CreateSurvey(props) {
       let ma = rankMax;
       let mi = rankMin;
       let st = rankStep;
+      let rd = 1.0;
 
       if (questionType !== 3) {
         ma = undefined;
         mi = undefined;
         st = undefined;
+        rd = undefined;
       }
 
       requestContent = {
@@ -311,7 +321,7 @@ export default function CreateSurvey(props) {
         range_min: mi,
         range_max: ma,
         range_step: st,
-        range_default: 1.0,
+        range_default: rd,
       };
     }
 
@@ -447,6 +457,7 @@ export default function CreateSurvey(props) {
           }
           setSurveyID(response.data.id);
           localStorage.setItem('surveyID', response.data.id);
+          navigate('/admin/create_survey');
         })
         .catch(() => {
           window.location.reload();
