@@ -26,7 +26,7 @@ import { useNavigate } from 'react-router-dom';
 
 const pages = [];
 const settings = ['Logout'];
-const NAMES = ['Football','Basketball','Survey1','Survey2','Survey3'];
+
 
 const ResponsiveAppBar = () => {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
@@ -234,6 +234,145 @@ const AlertDialog =(props)=> {
   );
 }
 
+const AlertDialogUpdate =(props)=> {
+  const [open, setOpen] = React.useState(false);
+  const navigate = useNavigate();
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleUpdate = () => {
+    axios.post(`/api/surveys/${props.id}/duplicate/`).then((response) => {
+      localStorage.setItem('surveyID', response.data.id);
+      navigate('/admin/create_survey');
+   }).catch((error) => { console.log(error) });
+  };
+
+
+  return (
+    <div>
+      <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
+        {props.name}
+      </Button>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Warning..."}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Do you want to {props.name} this Survey?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Decline</Button>
+          <Button onClick={handleUpdate} autoFocus>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+}
+
+const AlertDialogDelete =(props)=> {
+  const [open, setOpen] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleDelete = () =>{
+    axios.delete(`/api/surveys/${props.id}`).then(() => {
+       window.location.reload();
+    }).catch((error) => { console.log(error) });
+  };
+
+  return (
+    <div>
+      <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
+        {props.name}
+      </Button>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Warning..."}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Do you want to {props.name} this Survey?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Decline</Button>
+          <Button onClick={handleDelete} autoFocus>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+}
+
+const AlertDialogView =(props)=> {
+  const [open, setOpen] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  return (
+    <div>
+      <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
+        {props.name}
+      </Button>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Warning..."}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Do you want to {props.name} this Survey?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Decline</Button>
+          <Button href={`result/${props.id}`} autoFocus>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+}
+
+
 const AlertDialogRelease =(props)=> {
   const [open, setOpen] = React.useState(false);
 
@@ -284,16 +423,16 @@ const SurveyBar = (props) => {
           <Button variant="contained" disabled style={{color:'black', width:'25vw'}}>{props.name}</Button>
         </Grid>
         <Grid item xs={1.2}>
-          <AlertDialog name="Update"/>
+          <AlertDialogUpdate name="Update" id={props.id}/>
         </Grid>
         <Grid item xs={1.2}>
-          <AlertDialog name="Delete"/>
+          <AlertDialogDelete name="Delete" id={props.id}/>
         </Grid>
         <Grid item xs={1.2}>
           <AlertDialog name="Empty"/>
         </Grid>
         <Grid item xs={1.2}>
-          <Button variant="contained" size="small" style={{ background: '#990000'}}>View</Button>
+          <AlertDialogView name="View" id={props.id}/>
         </Grid>
         <Grid item xs={1.2}>
           <AlertDialogRelease name="Release" id={props.id}/>
