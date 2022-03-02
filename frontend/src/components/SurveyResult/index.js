@@ -1,4 +1,5 @@
 import React from 'react';
+import PieChart from './PieChart';
 import { useParams, useNavigate } from 'react-router-dom';
 import IconButton from '@mui/material/IconButton';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -32,7 +33,7 @@ export default function SurveyResult() {
 
   let { surveyID } = useParams();
   const navigate = useNavigate();
-  
+
   return (
     <div style={{width:'100%'}}>
       
@@ -55,15 +56,16 @@ export default function SurveyResult() {
         {title(1,"Short Answer Question Result Example")}
         {shortAnswer(SAs)}
 
+        {title(2,"Multiple Choice Question Result Example")}
+        <PieChart />
+
+        {title(3,"Selection Result Example")}
+        <PieChart />
         
       </div>
       {/* End Result */}
 
-      
-
-
-
-
+    
     </div>
   );
 }
