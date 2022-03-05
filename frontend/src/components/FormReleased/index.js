@@ -1,6 +1,7 @@
-import React from "react";
-import { useState } from 'react';
+import React, { useEffect, useState } from "react";
 import { ResponsiveAppBar } from '../AdminTemplate';
+import { useParams } from "react-router-dom";
+import axios from "axios";
 
 const contentFormat = {
     display: 'flex',
@@ -40,6 +41,23 @@ const numberStyle = {
 }
 
 function FormReleased() {
+    const {id} = useParams();
+    const [code, setCode] = useState(undefined);
+
+    useEffect(() => {
+
+        axios.get(`/api/sessions/?survey=${id}`).then(r=>{
+            if(r.status===200 && r.data.results.length>0){
+                setCode(r.data.results[0].code)
+            }else{
+                axios.post('/api/sessions/',{"survey":id}).then(res=>{
+                    if(res.status===201){setCode(res.data.code)}})
+            }
+        });
+        
+    });
+
+        
     return (
         <div style={contentFormat}>
             <ResponsiveAppBar />
@@ -48,7 +66,7 @@ function FormReleased() {
                 <div style={subtitle}><strong>The Code for Form is</strong></div>
                 <div style={numberStyle}>
                     <strong>
-                        1234
+                        {code}
                     </strong>
                 </div>
             </div>

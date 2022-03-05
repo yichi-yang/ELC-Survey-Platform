@@ -8,12 +8,17 @@ import RadioGroup from '@mui/material/RadioGroup';
 import Radio from '@mui/material/Radio';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Button from '@material-ui/core/Button';
+import axios from 'axios';
 import TextField from '@mui/material/TextField';
 import FormGroup from '@mui/material/FormGroup';
 import Checkbox from '@mui/material/Checkbox';
 import { useState, useEffect } from 'react';
+import { useParams } from "react-router-dom";
+import { DataObject } from "@mui/icons-material";
 
-export default function SurveyPage(surveyID) {
+export default function SurveyPage() {
+
+    const { surveyID } = useParams();
 
     const bodyStyle = {
         display: 'flex',
@@ -71,51 +76,110 @@ export default function SurveyPage(surveyID) {
     /* Change group number */
     const [room, setRoom] = useState('');
     /* Other Questions */
-    const [questionList , setQuestionList] = useState([]);
+    const [questionList, setQuestionList] = useState([]);
+    /* Checkbox Questions */
+    const [checkBoxChoices, setCheckBoxChoices] = useState(0);
     const handleRoomChange = (event) => {
         setRoom(event.target.value);
     };
+    /* @yiwen: Delete after Testing*/
     const [checked, setCheck] = useState({
         option_1: false,
         option_2: false,
         option_3: false,
     });
+    /* @yiwen: Delete after Testing*/
     const handleCheckChange = (event) => {
         setCheck({
             ...checked,
             [event.target.name]: event.target.checked,
         });
     };
+    /* @yiwen: Delete after Testing*/
     const { op1, op2, op3 } = checked;
 
-    /*
+    /* Checkbox State in array */
+    const [checkList, setCheckList] = useState([])
+    const newHandleCheckChange = (event) => {
+        setCheckList(checkList => {
+            let temp = [...checkList];
+            let obj = {"question": event.target.name, "choice": event.target.value}
+            /* If the selected choice exist, remove it */
+            if (checkList.some(item => item.choice === event.target.value)) {
+                let index = checkList.findIndex(x => x.choice === event.target.value);
+                temp.splice(index, 1);
+            }
+            else {
+                temp.push(obj)
+            }
+            return temp;
+        });
+    };
+
+    const newHandleRaioChange = (event) => {
+        setCheckList(checkList => {
+            let temp = [...checkList];
+            let obj = {"question": event.target.id, "choice": event.target.value}
+            /* If choosing another option in the same multiple choice question, remove the existing option and then append the new option */
+            if (checkList.some(item => item.question === event.target.id)) {
+                let index = checkList.findIndex(x => x.question === event.target.id);
+                temp.splice(index, 1);
+                temp.push(obj)
+            }
+            else {
+                temp.push(obj)
+            }
+            return temp;
+        });
+    };
+
+
     // 测试state用
+    /*
     useEffect(() => {
-        console.log("最新值")
-        console.log(questionList)
-    }, [questionList])
+        //console.log("最新值")
+        //console.log(checkBoxChoices)
+        let temporary = []
+        for (var i = 0; i < checkBoxChoices; i++) {
+            //console.log('questionList');
+            //console.log(questionList);
+            temporary.push(false)
+        }
+        setCheckList([...temporary])
+    }, [checkBoxChoices])
     */
 
     useEffect(() => {
-        fetch(`/api/surveys/${surveyID}/`)
-            .then(response => response.json())
-            .then(surveyInfo => setTitle(surveyInfo.title));
-        fetch(`/api/surveys/${surveyID}/questions/`)
-            .then(response => response.json())
-            .then(data => data.map((question) => {
+        console.log("checkList最新值")
+        console.log(checkList)
+    }, [checkList])
+
+    useEffect(() => {
+        axios
+            .get(`/api/surveys/${surveyID}/`)
+            .then((res) => { setTitle(res.data.title) })
+        axios
+            .get(`/api/surveys/${surveyID}/questions/`)
+            .then((res) => res.data.map((question) => {
                 /* Room Number Generator */
                 let room_array = [];
                 if (question.type === 'DP') {
                     question.choices.map((choice) => {
                         room_array.push(choice.value)
                     });
-                    setRoomList([...room_array])
+                    setRoomList([...room_array]);
                 }
                 /* Store Json into questionList */
                 else {
-                    setQuestionList(questionList => { 
-                        return[...questionList, question]
+                    setQuestionList(questionList => {
+                        return [...questionList, question]
                     })
+                }
+
+                /* Check box choices Counter */
+                if (question.type === 'CB') {
+                    let total = checkBoxChoices + question.choices.length;
+                    setCheckBoxChoices(total);
                 }
             }));
     }, []);
@@ -147,11 +211,12 @@ export default function SurveyPage(surveyID) {
                 </div>
                 {/* Radio group selection */}
                 {/* @yiwenwang Need to figure out how to dynamically generate useState hook */}
-                
-                <div style={questionMargin}>
-                    {questionList.map((q) => {
-                        if (q.type === 'MC') {
-                            return (
+
+
+                {questionList.map((q) => {
+                    if (q.type === 'MC') {
+                        return (
+                            <div style={questionMargin}>
                                 <FormControl>
                                     <div>Question {q.number}. {q.title}</div>
                                     <RadioGroup
@@ -161,15 +226,49 @@ export default function SurveyPage(surveyID) {
                                     >
                                         {q.choices.map((c) => {
                                             return (
-                                                <FormControlLabel value={c.value} control={<Radio />} label={c.description} />
+                                                <FormControlLabel value={c.value} control={<Radio id={q.id} value={c.id} onChange={newHandleRaioChange}/>} label={c.description} />
                                             )
                                         })}
                                     </RadioGroup>
                                 </FormControl>
-                            );
-                        }
-                    })}
-                </div>
+                            </div>
+                        );
+                    }
+                    else if (q.type === 'CB') {
+                        return (
+                            <div style={questionMargin}>
+                                <FormControl component="fieldset" variant="standard">
+                                    <div>Question {q.number}. {q.title}</div>
+                                    <FormLabel component="legend">You may select more than one options</FormLabel>
+                                    <FormGroup>
+                                        {
+                                            q.choices.map((c, index) => {
+                                                let obj = {"question": q.id, "choice": c.id}
+                                                return (
+                                                    <FormControlLabel
+                                                        control={
+                                                            <Checkbox checked={checkList.some(item => item.choice === c.id)} onChange={newHandleCheckChange} name={q.id} value={c.id} />
+                                                        }
+                                                        label={c.description}
+                                                    />
+                                                );
+                                            })}
+                                    </FormGroup>
+                                </FormControl>
+                            </div>
+                        );
+                    }
+                    else if (q.type === 'SA' || q.type === 'PA') {
+                        return (
+                            <div style={questionMargin}>
+                                <div>Question {q.number}. {q.title}</div>
+                                <TextField id="standard-basic" label="Type here..." variant="standard"
+                                    style={{ width: '70%' }} />
+                            </div>
+                        );
+                    }
+                })}
+
                 {/* Below is hardcoding MC question, need be deleted after test */}
                 <div style={questionMargin}>
                     <FormControl>
@@ -223,7 +322,7 @@ export default function SurveyPage(surveyID) {
                     </FormControl>
                 </div>
 
-                <button id="submit" style={submitButton} onClick={() => {console.log('hi')}}>
+                <button id="submit" style={submitButton} onClick={() => { console.log('hi') }}>
                     <strong>Submit</strong>
                 </button>
             </div>

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useEffect, useState } from 'react';
 import AppBar from '@mui/material/AppBar';
 import { styled, alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -21,10 +21,12 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const pages = [];
 const settings = ['Logout'];
-const NAMES = ['Football','Basketball','Survey1','Survey2','Survey3'];
+
 
 const ResponsiveAppBar = () => {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
@@ -232,6 +234,145 @@ const AlertDialog =(props)=> {
   );
 }
 
+const AlertDialogUpdate =(props)=> {
+  const [open, setOpen] = React.useState(false);
+  const navigate = useNavigate();
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleUpdate = () => {
+    axios.post(`/api/surveys/${props.id}/duplicate/`).then((response) => {
+      localStorage.setItem('surveyID', response.data.id);
+      navigate('/admin/create_survey');
+   }).catch((error) => { console.log(error) });
+  };
+
+
+  return (
+    <div>
+      <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
+        {props.name}
+      </Button>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Warning..."}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Do you want to {props.name} this Survey?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Decline</Button>
+          <Button onClick={handleUpdate} autoFocus>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+}
+
+const AlertDialogDelete =(props)=> {
+  const [open, setOpen] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleDelete = () =>{
+    axios.delete(`/api/surveys/${props.id}`).then(() => {
+       window.location.reload();
+    }).catch((error) => { console.log(error) });
+  };
+
+  return (
+    <div>
+      <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
+        {props.name}
+      </Button>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Warning..."}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Do you want to {props.name} this Survey?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Decline</Button>
+          <Button onClick={handleDelete} autoFocus>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+}
+
+const AlertDialogView =(props)=> {
+  const [open, setOpen] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  return (
+    <div>
+      <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
+        {props.name}
+      </Button>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Warning..."}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Do you want to {props.name} this Survey?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Decline</Button>
+          <Button href={`result/${props.id}`} autoFocus>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+}
+
+
 const AlertDialogRelease =(props)=> {
   const [open, setOpen] = React.useState(false);
 
@@ -264,7 +405,7 @@ const AlertDialogRelease =(props)=> {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Decline</Button>
-          <Button href="released" autoFocus>
+          <Button href={`released/${props.id}`} autoFocus>
             Confirm
           </Button>
         </DialogActions>
@@ -282,19 +423,19 @@ const SurveyBar = (props) => {
           <Button variant="contained" disabled style={{color:'black', width:'25vw'}}>{props.name}</Button>
         </Grid>
         <Grid item xs={1.2}>
-          <AlertDialog name="Update"/>
+          <AlertDialogUpdate name="Update" id={props.id}/>
         </Grid>
         <Grid item xs={1.2}>
-          <AlertDialog name="Delete"/>
+          <AlertDialogDelete name="Delete" id={props.id}/>
         </Grid>
         <Grid item xs={1.2}>
           <AlertDialog name="Empty"/>
         </Grid>
         <Grid item xs={1.2}>
-          <Button variant="contained" size="small" style={{ background: '#990000'}}>View</Button>
+          <AlertDialogView name="View" id={props.id}/>
         </Grid>
         <Grid item xs={1.2}>
-          <AlertDialogRelease name="Release"/>
+          <AlertDialogRelease name="Release" id={props.id}/>
         </Grid>
       </Grid>
     );
@@ -302,6 +443,30 @@ const SurveyBar = (props) => {
 
 
 export default function AdminTemplate(){
+  const [surveyName, setsurveyName] = useState([]);
+  const [surveyId, setSurveyId] = useState([]); 
+  React.useEffect(() => {
+  axios
+   .get('/api/surveys/')
+   .then((res) => {
+    if (res.status === 200) {
+      if(res.data.count>0){
+        let nameList = [];
+        let idList = [];
+        res.data.results.forEach((q) => {
+          if(!q.draft){
+            nameList.push(q.title);
+            idList.push(q.id);
+          }
+        });
+        setsurveyName(nameList);
+        setSurveyId(idList);
+      }
+    }
+    }).catch((error) => { console.log(error) });
+  }, []);
+  console.log(surveyName)
+  const navigate = useNavigate();
   return(
     <Grid container rowSpacing={2}>
       <Grid item xs={12}>
@@ -323,11 +488,11 @@ export default function AdminTemplate(){
         </Search>
       </Grid>
 
-      {NAMES.map((name) => (
+      {surveyName.map((name,index) => (
         <Grid container style={{marginTop:'1.5vw'}}>
           <Grid item xs={1.5}></Grid>
           <Grid item xs={10.5}>
-            <SurveyBar name={name}/>
+            <SurveyBar name={name} id={surveyId[index]}/>
           </Grid>
         </Grid>
       ))}
@@ -336,7 +501,14 @@ export default function AdminTemplate(){
       <Grid item xs={10}></Grid>
       <Grid item xs={2}>
 
-      <IconButton color="primary" aria-label="add to shopping cart" href='/admin/create_survey'>
+      <IconButton color="primary" aria-label="add to shopping cart" onClick={()=>{
+        if(localStorage.getItem('surveyID')!==null){
+          axios.delete(`/api/surveys/${localStorage.getItem('surveyID')}`).then(() => {
+            localStorage.setItem('surveyID','null');
+          });
+        }
+        navigate('/admin/create_survey');
+      }}>
 
         <AddCircleOutlineIcon style={{color:'#FFC72C'}} sx={{ fontSize: 80 }}/>
       </IconButton>
