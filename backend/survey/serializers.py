@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from hashid_field.rest import HashidSerializerCharField
 from django.utils.translation import gettext_lazy as _
+from collections import defaultdict
 from .models import (Survey, SurveyQuestion, SurveyQuestionChoice,
                      SurveyResponse, SurveySubmission, Survey, SurveySession)
 from .validators import OwnedByRequestUser
@@ -231,13 +232,17 @@ class NestedSurveyResponseSerializer(serializers.ModelSerializer):
         'choice': [
             SurveyQuestion.QuestionType.MULTICHOICE,
             SurveyQuestion.QuestionType.CHECKBOXES,
-            SurveyQuestion.QuestionType.DROPDOWN
+            SurveyQuestion.QuestionType.DROPDOWN,
+            SurveyQuestion.QuestionType.RANKING
         ],
         'text': [
             SurveyQuestion.QuestionType.SHORT_ANSWER,
             SurveyQuestion.QuestionType.PARAGRAPH
         ],
-        'numeric_value': [SurveyQuestion.QuestionType.SCALE]
+        'numeric_value': [
+            SurveyQuestion.QuestionType.SCALE,
+            SurveyQuestion.QuestionType.RANKING
+        ]
     }
 
     class Meta:
@@ -254,7 +259,7 @@ class NestedSurveyResponseSerializer(serializers.ModelSerializer):
     def validate(self, data):
         """
         Check if required fields exist based on question types
-        and make sure choice matches question.
+        and make sure the choice matches question.
         """
 
         question = data['question']
@@ -279,6 +284,13 @@ class NestedSurveyResponseSerializer(serializers.ModelSerializer):
                     {'choice': f'Invalid choice for question {question.id}'}
                 )
 
+        if 'numeric_value' in data:
+            # make sure the value is in range
+            if not (question.range_min <= data['numeric_value'] <= question.range_max):
+                raise serializers.ValidationError(
+                    {'numeric_value': f'Value must be between {question.range_min} and {question.range_max}.'}
+                )
+
         return data
 
     def update(self, instance, validated_data):
@@ -293,17 +305,16 @@ class NestedSurveySubmissionSerializer(serializers.ModelSerializer):
         source_field='survey.SurveySubmission.id',
         read_only=True
     )
-    survey = serializers.HiddenField(
+    session = serializers.HiddenField(
         default=SerializerContextDefault(
             lambda context: context['view'].parent_instance
         )
     )
-    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
     responses = NestedSurveyResponseSerializer(many=True)
 
     class Meta:
         model = SurveySubmission
-        fields = ['id', 'survey', 'user', 'submission_time', 'responses']
+        fields = ['id', 'session', 'submission_time', 'responses']
 
     def validate(self, data):
         """
@@ -311,43 +322,59 @@ class NestedSurveySubmissionSerializer(serializers.ModelSerializer):
         all required questions are answered.
         """
 
-        count = dict()
-        seen_choices = set()
+        existing_choices = set()
+        question_response_count = defaultdict(int)
 
         for response in data['responses']:
-            question = response['question']
-            count[question] = count.get(question, 0) + 1
-            if question.choice is not None:
-                if question.choice in seen_choices:
-                    raise serializers.ValidationError(
-                        _("Can't select the same choice (id={c_id}) twice.").format(
-                            c_id=question.choice.id
-                        )
-                    )
-                seen_choices.add(question.choice)
+            # count how many responses a question have
+            question_response_count[response['question'].id] += 1
 
-        for question in data['survey'].questions.all():
-            if question in count:
-                # check for duplicate answers
-                if question.type != SurveyQuestion.QuestionType.CHECKBOXES and count[question] > 1:
+            # make sure choices are unique
+            if 'choice' in response:
+                if response['choice'].id in existing_choices:
                     raise serializers.ValidationError(
-                        _("Duplicate answers not allowed for {question_type!r}(id={q_id}).").format(
-                            question_type=question.type,
-                            q_id=question.id
-                        )
+                        "Selected choices must be unique (choice {id})."
+                        .format(id=response['choice'].id)
                     )
-                count.pop(question)
-            # required but not provided
-            elif question.required:
+                else:
+                    existing_choices.add(response['choice'].id)
+
+        for question in data['session'].survey.questions.all():
+            # number of responses for current question
+            response_count = question_response_count[question.id]
+
+            # make sure a response is provided if the question is required
+            if question.required and response_count == 0:
                 raise serializers.ValidationError(
-                    _("Question {q_id} is required.").format(q_id=question.id)
+                    "Question {id} is required.".format(id=question.id)
                 )
 
+            if response_count != 0:
+                q_type = SurveyQuestion.QuestionType(question.type).label
+                # check for too many responses
+                if response_count < question.min_responses:
+                    raise serializers.ValidationError(
+                        "Not enough responses for {type!r} {id}.".format(
+                            type=q_type,
+                            id=question.id
+                        )
+                    )
+                elif response_count > question.max_responses:
+                    raise serializers.ValidationError(
+                        "Too many responses for {type!r} {id}.".format(
+                            type=q_type,
+                            id=question.id
+                        )
+                    )
+
+            question_response_count.pop(question.id)
+
         # check for questions that don't belong to the given survey
-        if len(count) > 0:
+        if len(question_response_count) > 0:
+            question_ids = question_response_count.keys()
             raise serializers.ValidationError(
                 _("Questions {q_ids} are invalid for survey {s_id}.").format(
-                    q_ids=','.join(str(q.id) for q in count.keys()),
+                    q_ids=','.join(str(q.id) for q in question_ids),
                     s_id=data['survey'].id
                 )
             )
