@@ -868,8 +868,427 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
                                     mixins.ListModelMixin,
                                     viewsets.GenericViewSet):
     """
-    API endpoint that allows survey submissions to be created or viewed.
+    API endpoint that allows survey submissions to be viewed or edited.
     Editing a submission is not supported.
+
+    # Field Description
+
+    | Field             | Type               |          | Description                                                            |
+    | ----------------- | ------------------ | -------- | ---------------------------------------------------------------------- |
+    | `id`              | `string`           | readonly | The submission's unique id.                                            |
+    | `submission_time` | `string`           | readonly | The submission time in ISO 8601 format.                                |
+    | `responses`       | `[ResponseObject]` |          | A list of question responses, see [Response Object](#response-object). |
+
+    # Response Object
+
+    A `ResponseObject` represent a response to a question.
+
+    | Field           | Type     |           | Description                                                            |
+    | --------------- | -------- | --------- | ---------------------------------------------------------------------- |
+    | `question`      | `string` |           | The id of the question being responded to.                             |
+    | `choice`        | `string` | optional* | The id of the selected choice if the response involves choices.        |
+    | `text`          | `string` | optional* | The answer to the question of the question requires an answer in text. |
+    | `numeric_value` | `float`  | optional* | The value of the response if it involves numeric values.               |
+
+    The `type` of the question determines if a field marked as **optional\*** is required
+    and how many `ResponseObject` should be included.
+
+    | Type            | Code   | Min #          | Max #          | Required Fields           |
+    | --------------- | ------ | -------------- | -------------- | ------------------------- |
+    | Multiple Choice | `'MC'` | 1              | 1              | `choice`                  |
+    | Checkboxes      | `'CB'` | 1              | `len(choices)` | `choice`                  |
+    | Dropdown        | `'DP'` | 1              | 1              | `choice`                  |
+    | Scale           | `'SC'` | 1              | 1              | `numeric_value`           |
+    | Short Answer    | `'SA'` | 1              | 1              | `text`                    |
+    | Long Answer     | `'PA'` | 1              | 1              | `text`                    |
+    | Ranking         | `'RK'` | `len(choices)` | `len(choices)` | `choice`, `numeric_value` |
+
+    > Note: If a question is not `required`, it is also valid if 0 `ResponseObject`
+    > is included for that question. Otherwise, at least Min # and at most Max #
+    > `ResponseObject` must be included in `responses`.
+
+    # Examples
+
+    ## Make a Submission
+
+    To make a submission to a session, `POST /api/sessions/<sessions_id>/submissions/`.  
+    Anyone can make submission.  
+
+    Suppose we have a survey with the following questions:
+
+    ``` json
+    [
+        {
+            "id": "yO5lED9",
+            "number": 1,
+            "title": "Which is better?",
+            "required": true,
+            "type": "MC",
+            "choices": [
+                {
+                    "id": "m2OkayZ",
+                    "value": "A",
+                    "description": "Star Trek"
+                },
+                {
+                    "id": "WKo1dyZ",
+                    "value": "B",
+                    "description": "Star Wars"
+                }
+            ]
+        },
+        {
+            "id": "R7jNpDG",
+            "number": 2,
+            "title": "Select all valid statements.",
+            "required": true,
+            "type": "CB",
+            "choices": [
+                {
+                    "id": "GDOaMOj",
+                    "value": "A",
+                    "description": "1 + 1 = 2"
+                },
+                {
+                    "id": "LjyRko9",
+                    "value": "B",
+                    "description": "1 + 2 = 3"
+                },
+                {
+                    "id": "D9NXgO6",
+                    "value": "C",
+                    "description": "1 - 1 = 1"
+                }
+            ]
+        },
+        {
+            "id": "dBjywDL",
+            "number": 3,
+            "title": "Which breakout room are you in?",
+            "required": true,
+            "type": "DP",
+            "choices": [
+                {
+                    "id": "M9O2bOA",
+                    "value": "1",
+                    "description": "breakout room 1"
+                },
+                {
+                    "id": "wKoPloR",
+                    "value": "2",
+                    "description": "breakout room 2"
+                },
+                {
+                    "id": "MgyreN6",
+                    "value": "3",
+                    "description": "breakout room 3"
+                },
+                {
+                    "id": "0vNLJol",
+                    "value": "4",
+                    "description": "breakout room 4"
+                },
+                {
+                    "id": "B4OBvO2",
+                    "value": "5",
+                    "description": "breakout room 5"
+                }
+            ]
+        },
+        {
+            "id": "Lo5MY5R",
+            "number": 4,
+            "title": "From 1 to 10, how's your day going?",
+            "required": true,
+            "type": "SC",
+            "range_min": 1.0,
+            "range_max": 10.0,
+            "range_default": 5.0,
+            "range_step": 1.0
+        },
+        {
+            "id": "GajwyDE",
+            "number": 5,
+            "title": "What is your favorite fruit?",
+            "required": true,
+            "type": "SA"
+        },
+        {
+            "id": "O2VeYVd",
+            "number": 6,
+            "title": "Describe the city you live in.",
+            "required": true,
+            "type": "PA"
+        },
+        {
+            "id": "vQVx1jW",
+            "number": 7,
+            "title": "Please rank the following roles:",
+            "required": true,
+            "type": "RK",
+            "range_min": 1.0,
+            "range_max": 5.0,
+            "range_default": 1.0,
+            "range_step": 1.0,
+            "choices": [
+                {
+                    "id": "eMNVmOD",
+                    "value": "A",
+                    "description": "CEO"
+                },
+                {
+                    "id": "wGo71N5",
+                    "value": "B",
+                    "description": "CFO"
+                },
+                {
+                    "id": "DMNxbo0",
+                    "value": "C",
+                    "description": "COO"
+                }
+            ]
+        },
+        {
+            "id": "GrjLWV2",
+            "number": 8,
+            "title": "You don't have to answer this.",
+            "required": false,
+            "type": "SA"
+        }
+    ]
+    ```
+
+    To make a submission to that survey's session:
+
+    ``` javascript
+    // POST /api/sessions/<sessions_id>/submissions/
+    {
+        "responses": [
+            // multiple choice
+            {"question": "yO5lED9", "choice": "m2OkayZ"},
+            // checkboxes
+            {"question": "R7jNpDG", "choice": "GDOaMOj"},
+            {"question": "R7jNpDG", "choice": "LjyRko9"},
+            // dropdown
+            {"question": "dBjywDL", "choice": "wKoPloR"},
+            // scale
+            {"question": "Lo5MY5R", "numeric_value": 8.0},
+            // short answer
+            {"question": "GajwyDE", "text": "apple"},
+            // paragraph
+            {"question": "O2VeYVd", "text": "Describe the city you live in."},
+            // ranking
+            {"question": "vQVx1jW", "choice": "eMNVmOD", "numeric_value": 1.0},
+            {"question": "vQVx1jW", "choice": "wGo71N5", "numeric_value": 2.0},
+            {"question": "vQVx1jW", "choice": "DMNxbo0", "numeric_value": 3.0},
+            // optional question, can be omitted
+            {"question": "GrjLWV2", "text": "optional"}
+        ]
+    }
+
+    // HTTP 201 Created
+    {
+        "id": "7rZoWZ4",
+        "submission_time": "2022-03-05T23:19:07.822730Z",
+        "responses": [
+            {
+                "question": "yO5lED9",
+                "choice": "m2OkayZ"
+            },
+            {
+                "question": "R7jNpDG",
+                "choice": "GDOaMOj"
+            },
+            {
+                "question": "R7jNpDG",
+                "choice": "LjyRko9"
+            },
+            {
+                "question": "dBjywDL",
+                "choice": "wKoPloR"
+            },
+            {
+                "question": "Lo5MY5R",
+                "numeric_value": 8.0
+            },
+            {
+                "question": "GajwyDE",
+                "text": "apple"
+            },
+            {
+                "question": "O2VeYVd",
+                "text": "Describe the city you live in."
+            },
+            {
+                "question": "vQVx1jW",
+                "choice": "eMNVmOD",
+                "numeric_value": 1.0
+            },
+            {
+                "question": "vQVx1jW",
+                "choice": "wGo71N5",
+                "numeric_value": 2.0
+            },
+            {
+                "question": "vQVx1jW",
+                "choice": "DMNxbo0",
+                "numeric_value": 3.0
+            },
+            {
+                "question": "GrjLWV2",
+                "text": "optional"
+            }
+        ]
+    }
+    ```
+
+    ## List Submissions
+
+    You can list all submissions of a specific sessions.  
+    Only authenticated users can list submissions.  
+
+    ``` javascript
+    // GET /api/sessions/<sessions_id>/submissions/
+
+    // HTTP 200 OK
+    {
+        "count": 2,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "id": "7rZoWZ4",
+                "submission_time": "2022-03-05T23:19:07.822730Z",
+                "responses": [
+                    {
+                        "question": "yO5lED9",
+                        "choice": "m2OkayZ"
+                    },
+                    {
+                        "question": "R7jNpDG",
+                        "choice": "GDOaMOj"
+                    },
+                    {
+                        "question": "R7jNpDG",
+                        "choice": "LjyRko9"
+                    },
+                    {
+                        "question": "dBjywDL",
+                        "choice": "wKoPloR"
+                    },
+                    {
+                        "question": "Lo5MY5R",
+                        "numeric_value": 8.0
+                    },
+                    {
+                        "question": "GajwyDE",
+                        "text": "apple"
+                    },
+                    {
+                        "question": "O2VeYVd",
+                        "text": "Describe the city you live in."
+                    },
+                    {
+                        "question": "vQVx1jW",
+                        "choice": "eMNVmOD",
+                        "numeric_value": 1.0
+                    },
+                    {
+                        "question": "vQVx1jW",
+                        "choice": "wGo71N5",
+                        "numeric_value": 2.0
+                    },
+                    {
+                        "question": "vQVx1jW",
+                        "choice": "DMNxbo0",
+                        "numeric_value": 3.0
+                    },
+                    {
+                        "question": "GrjLWV2",
+                        "text": "optional"
+                    }
+                ]
+            }
+            // more submissions ...
+        ]
+    }
+    ```
+
+    ## Fetch Submission
+
+    To fetch a specific submission, `GET /api/sessions/<sessions_id>/submissions/<submission_id>/`.  
+    Only authenticated users can fetch submissions.  
+
+    ``` javascript
+    // GET /api/surveys/<survey_id>/questions/7rZoWZ4/
+
+    // HTTP 200 OK
+
+    {
+        "id": "7rZoWZ4",
+        "submission_time": "2022-03-05T23:19:07.822730Z",
+        "responses": [
+            {
+                "question": "yO5lED9",
+                "choice": "m2OkayZ"
+            },
+            {
+                "question": "R7jNpDG",
+                "choice": "GDOaMOj"
+            },
+            {
+                "question": "R7jNpDG",
+                "choice": "LjyRko9"
+            },
+            {
+                "question": "dBjywDL",
+                "choice": "wKoPloR"
+            },
+            {
+                "question": "Lo5MY5R",
+                "numeric_value": 8.0
+            },
+            {
+                "question": "GajwyDE",
+                "text": "apple"
+            },
+            {
+                "question": "O2VeYVd",
+                "text": "Describe the city you live in."
+            },
+            {
+                "question": "vQVx1jW",
+                "choice": "eMNVmOD",
+                "numeric_value": 1.0
+            },
+            {
+                "question": "vQVx1jW",
+                "choice": "wGo71N5",
+                "numeric_value": 2.0
+            },
+            {
+                "question": "vQVx1jW",
+                "choice": "DMNxbo0",
+                "numeric_value": 3.0
+            },
+            {
+                "question": "GrjLWV2",
+                "text": "optional"
+            }
+        ]
+    }
+    ```
+
+    ## Delete Submission
+
+    To delete a specific submission, `DELETE /api/sessions/<sessions_id>/submissions/<submission_id>/`.  
+    Only authenticated users can delete submissions.  
+
+    ``` javascript
+    // DELETE /api/sessions/<sessions_id>/submissions/<submission_id>/
+
+    // HTTP 204 No Content
+    ```
     """
     serializer_class = NestedSurveySubmissionSerializer
     permission_classes = [IsAuthenticatedOrCreateOnly]
@@ -1000,7 +1419,8 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
 
     # Related Endpoints
 
-    To do reverse lookups using `code`, see [code to session endpoint](/api/codes/).
+    To do reverse lookups using `code`, see [code to session endpoint](/api/codes/).  
+    To make submissions or view results, use `/api/sessions/<id>/submissions/`.
     """
     serializer_class = SurveySessionSerializer
     # we can change this later
