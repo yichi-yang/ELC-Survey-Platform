@@ -2,6 +2,9 @@ from django.db.models import QuerySet
 from rest_framework import viewsets, mixins, status
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+import random
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from .models import Survey, SurveyQuestion, SurveyQuestionChoice, SurveySubmission
 from .serializers import (
     SurveySerializer,
@@ -13,9 +16,7 @@ from .models import Survey, SurveyQuestion, SurveySubmission, SurveySession
 from .utils import handle_invalid_hashid, query_param_to_bool
 from .permissions import IsAuthenticatedOrCreateOnly
 from .exceptions import BadQueryParameter
-import random
-from rest_framework.decorators import action
-from rest_framework.response import Response
+from .summarizer import SubmissionSummarizer
 
 # creates another instance of a model with all the same fields
 # except for id
@@ -1303,7 +1304,17 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
     def get_queryset(self):
         return SurveySubmission.objects\
             .filter(session=self.kwargs['session_pk'])\
-            .prefetch_related('responses')
+            .prefetch_related('responses')\
+            .prefetch_related('responses__question')
+
+    @action(detail=False, methods=['get'])
+    def summarize(self, request, session_pk=None):
+
+        session = self.parent_instance
+        submission_queryset = self.get_queryset()
+        summarizer = SubmissionSummarizer(session, submission_queryset)
+
+        return Response(summarizer.data)
 
 
 class SurveySessionViewSet(mixins.CreateModelMixin,

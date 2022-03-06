@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'dj_rest_auth',
+    'debug_toolbar',
     'survey'
 ]
 
@@ -52,6 +53,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'elcform.urls'
@@ -150,7 +152,15 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'elcform.pagination.DefaultLimitOffsetPagination'
 }
 
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
+
 
 # dj_rest_auth
 REST_USE_JWT = True
 REST_SESSION_LOGIN = False
+
+# Fixes Django Debug Toolbar disallowed MIME type (“text/plain”) on Windows
+import mimetypes
+mimetypes.add_type("application/javascript", ".js", True)
