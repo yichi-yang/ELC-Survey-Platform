@@ -15,10 +15,14 @@ import Checkbox from '@mui/material/Checkbox';
 import { useState, useEffect } from 'react';
 import { useParams } from "react-router-dom";
 import { DataObject } from "@mui/icons-material";
+import { useLocation } from "react-router-dom";
 
-export default function SurveyPage() {
+export default function SurveyPage(props) {
 
-    const { surveyID } = useParams();
+    const { sessionID } = useParams();
+
+    const location = useLocation();
+    const {surveyID} =location.state;
 
     const bodyStyle = {
         display: 'flex',
