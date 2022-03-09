@@ -101,21 +101,6 @@ export default function SurveyPage(props) {
             return temp;
         });
     };
-    /* @yiwen: Delete after Testing*/
-    const [checked, setCheck] = useState({
-        option_1: false,
-        option_2: false,
-        option_3: false,
-    });
-    /* @yiwen: Delete after Testing*/
-    const handleCheckChange = (event) => {
-        setCheck({
-            ...checked,
-            [event.target.name]: event.target.checked,
-        });
-    };
-    /* @yiwen: Delete after Testing*/
-    const { op1, op2, op3 } = checked;
 
     /* Checkbox State in array */
     const [checkList, setCheckList] = useState([])
@@ -360,59 +345,6 @@ export default function SurveyPage(props) {
                         );
                     }
                 })}
-
-                {/* Below is hardcoding MC question, need be deleted after test */}
-                <div style={questionMargin}>
-                    <FormControl>
-                        <div>Question 1</div>
-                        <RadioGroup
-                            aria-labelledby="demo-radio-buttons-group-label"
-                            defaultValue="female"
-                            name="radio-buttons-group"
-                        >
-                            <FormControlLabel value="female" control={<Radio />} label="Female" />
-                            <FormControlLabel value="male" control={<Radio />} label="Male" />
-                            <FormControlLabel value="other" control={<Radio />} label="Other" />
-                        </RadioGroup>
-                    </FormControl>
-                </div>
-
-
-
-                {/* Text field */}
-                <div style={questionMargin}>
-                    <div>Question 2</div>
-                    <TextField id="standard-basic" label="Type here..." variant="standard"
-                        style={{ width: '70%' }} />
-                </div>
-
-                {/* Check box */}
-                <div style={questionMargin}>
-                    <div>Question 3</div>
-                    <FormControl component="fieldset" variant="standard">
-                        <FormLabel component="legend">You may select more than one options</FormLabel>
-                        <FormGroup>
-                            <FormControlLabel
-                                control={
-                                    <Checkbox checked={op1} onChange={handleCheckChange} name="option_1" />
-                                }
-                                label="Option1"
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Checkbox checked={op2} onChange={handleCheckChange} name="option_2" />
-                                }
-                                label="Option2"
-                            />
-                            <FormControlLabel
-                                control={
-                                    <Checkbox checked={op3} onChange={handleCheckChange} name="option_3" />
-                                }
-                                label="Option3"
-                            />
-                        </FormGroup>
-                    </FormControl>
-                </div>
 
                 <button id="submit" style={submitButton} onClick={() => submitForm(checkList)}>
                     <strong>Submit</strong>
