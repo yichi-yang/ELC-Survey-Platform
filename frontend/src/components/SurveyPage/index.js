@@ -81,8 +81,6 @@ export default function SurveyPage(props) {
     const [room, setRoom] = useState('');
     /* Other Questions */
     const [questionList, setQuestionList] = useState([]);
-    /* Checkbox Questions */
-    const [checkBoxChoices, setCheckBoxChoices] = useState(0);
     /* Dropdown OnChange*/
     const handleRoomChange = (event) => {
         /* Display value on the dropdown */
@@ -188,6 +186,14 @@ export default function SurveyPage(props) {
         });
     };
 
+    const submitForm = (res) => {
+        console.log("submit")
+        console.log(res)
+        let submissionData = {"responses": res}
+        axios
+            .post(`/api/sessions/${sessionID}/submissions/`, submissionData)
+    }
+
 
     // 测试state用
     /*
@@ -209,7 +215,6 @@ export default function SurveyPage(props) {
         console.log(checkList)
     }, [checkList])
 
-    let roomQuestionId = '';
     useEffect(() => {
         axios
             .get(`/api/surveys/${surveyID}/`)
@@ -223,18 +228,11 @@ export default function SurveyPage(props) {
                     question.choices.map((choice) => {
                         room_array.push(choice.value)
                     });
-                    roomQuestionId = question.id;
                     setRoomList([...room_array]);
                 }
                 setQuestionList(questionList => {
                     return [...questionList, question]
                 })
-
-                /* Check box choices Counter */
-                if (question.type === 'CB') {
-                    let total = checkBoxChoices + question.choices.length;
-                    setCheckBoxChoices(total);
-                }
             }));
     }, []);
 
@@ -416,7 +414,7 @@ export default function SurveyPage(props) {
                     </FormControl>
                 </div>
 
-                <button id="submit" style={submitButton} onClick={() => { console.log('hi') }}>
+                <button id="submit" style={submitButton} onClick={() => submitForm(checkList)}>
                     <strong>Submit</strong>
                 </button>
             </div>
