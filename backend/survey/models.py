@@ -152,7 +152,7 @@ class SurveySubmission(models.Model):
     submission_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'SurveySubmission id={self.id} survey={self.survey.id}'
+        return f'SurveySubmission id={self.id} session={self.session.id}'
 
 
 class SurveyResponse(models.Model):
