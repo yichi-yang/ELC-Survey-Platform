@@ -144,7 +144,11 @@ class SurveySubmission(models.Model):
         primary_key=True,
         salt=build_auto_salt('SurveySubmission')
     )
-    session = models.ForeignKey(SurveySession, on_delete=models.CASCADE)
+    session = models.ForeignKey(
+        SurveySession,
+        on_delete=models.CASCADE,
+        related_name='submissions'
+    )
     submission_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
