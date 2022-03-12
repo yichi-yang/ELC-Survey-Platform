@@ -1290,6 +1290,56 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
 
     // HTTP 204 No Content
     ```
+
+    ## Submission Summary
+
+    To get a summary of all submissions,  `GET /api/sessions/<sessions_id>/summarize/`.  
+    Only authenticated users can fetch summaries.  
+
+    ``` javascript
+    // GET /api/sessions/4wNwX6O/submissions/summarize/
+
+    // HTTP 200 OK
+
+    // Returns a SubmissionSummaryObject
+    {
+        "submission_count": 5,
+        // A copy of the survey's group_by_question
+        "group_by_question": {
+            "id": "dBjywDL",
+            "title": "Which breakout room are you in?",
+            // ...
+        },
+        "question_summary": [
+            // Question Summary Objects
+        ]
+    }
+    ```
+
+    ### SubmissionSummary Object
+
+    | Field               | Type                      | Description                                                                                  |
+    | ------------------- | ------------------------- | -------------------------------------------------------------------------------------------- |
+    | `submission_count`  | `int`                     | Total number of submissions.                                                                 |
+    | `group_by_question` | `QuestionObject`          | The survey's `group_by_question` (could be `null` uf the survey has no `group_by_question`). |
+    | `question_summary`  | `[QuestionSummaryObject]` | A list of question summaries, see [Question Summary Object](#question-summary-object).       |
+
+    ### Question Summary Object
+
+    | Field      | Type                            | Description                                                                                               |
+    | ---------- | ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+    | `question` | `QuestionObject`                | The question being summarized.                                                                            |
+    | `all`      | `SummaryDetailObject`           | A summary of all the submissions for this question, see [Summary Detail Object](#summary-detail-object).  |
+    | `by_group` | `{string: SummaryDetailObject}` | Summaries grouped by submissions' group choices. The keys correspond to `group_by_question`'s choice ids. |
+
+    ### Summary Detail Object
+
+    | Field                          | Type                        | Question Types         | Description                                                                                                                                                                              |
+    | ------------------------------ | --------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | `count`                        | `{string: int}`             | `'MC'`, `'CB'`, `'DP'` | The number of times a choice is chosen. The keys correspond to the choices' ids.                                                                                                         |
+    | `answers`                      | `[string]`                  | `'SA'`, `'PA'`         | A list of all the responses.                                                                                                                                                             |
+    | `min`, `max`, `mean`, `median` | `float`                     | `'MC'`*, `'SC'`        | The statistics of submission responses. These are also included for `'MC'` questions with choices convertible to `float`s.                                                               |
+    | `ranking`                      | `{string: StatisticObject}` | `'RK'`                 | The statistics for each thing to be ranked. The keys correspond to the choices' ids. The `StatisticObject` includes `min`, `max`, `mean`, `median`, similar to that of `'MC'` questions. |
     """
     serializer_class = NestedSurveySubmissionSerializer
     permission_classes = [IsAuthenticatedOrCreateOnly]

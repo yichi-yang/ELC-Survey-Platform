@@ -98,12 +98,13 @@ class SubmissionSummarizer:
         return self._summarize_text(question, responses)
 
     def summarize_RK(self, question, responses):
-        return {
+        ranking = {
             str(c.id): self._summarize_numeric_values([
                 r.numeric_value for r in responses if r.choice == c
             ])
             for c in question.choices.all()
         }
+        return {'ranking': ranking}
 
     # Helpers
 
