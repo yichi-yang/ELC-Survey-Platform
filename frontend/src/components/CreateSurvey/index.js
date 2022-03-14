@@ -457,7 +457,6 @@ export default function CreateSurvey(props) {
           }
           setSurveyID(response.data.id);
           localStorage.setItem('surveyID', response.data.id);
-          navigate('/admin/create_survey');
         })
         .catch(() => {
           window.location.reload();

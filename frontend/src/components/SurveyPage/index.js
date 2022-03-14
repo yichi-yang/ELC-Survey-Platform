@@ -17,7 +17,7 @@ import { useParams } from "react-router-dom";
 import { DataObject } from "@mui/icons-material";
 import { useLocation } from "react-router-dom";
 
-export default function SurveyPage(props) {
+export default function SurveyPage() {
 
     const { sessionID } = useParams();
 

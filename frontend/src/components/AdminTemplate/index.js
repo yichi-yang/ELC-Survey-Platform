@@ -502,12 +502,8 @@ export default function AdminTemplate(){
       <Grid item xs={2}>
 
       <IconButton color="primary" aria-label="add to shopping cart" onClick={()=>{
-        if(localStorage.getItem('surveyID')!==null){
-          axios.delete(`/api/surveys/${localStorage.getItem('surveyID')}`).then(() => {
             localStorage.setItem('surveyID','null');
-          });
-        }
-        navigate('/admin/create_survey');
+            navigate('/admin/create_survey');
       }}>
 
         <AddCircleOutlineIcon style={{color:'#FFC72C'}} sx={{ fontSize: 80 }}/>
