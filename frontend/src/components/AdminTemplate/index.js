@@ -342,6 +342,19 @@ const AlertDialogView =(props)=> {
     setOpen(false);
   };
 
+  const navigate = useNavigate();
+
+  const handleConfirm = () => {
+    axios.get(`/api/sessions/?survey=${props.id}`).then(r=>{
+      if(r.status===200 && r.data.results.length>0){
+          navigate(`/result/${props.id}/${r.data.results[0].id}`)
+      }else{
+          axios.post('/api/sessions/',{"survey":props.id}).then(res=>{
+              if(res.status===201){navigate(`/result/${props.id}/${r.data.id}`)}})
+      }
+    });
+  }
+
   return (
     <div>
       <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
@@ -363,7 +376,7 @@ const AlertDialogView =(props)=> {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Decline</Button>
-          <Button href={`result/${props.id}`} autoFocus>
+          <Button onClick={handleConfirm} autoFocus>
             Confirm
           </Button>
         </DialogActions>

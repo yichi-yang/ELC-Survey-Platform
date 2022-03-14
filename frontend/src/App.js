@@ -20,7 +20,7 @@ function App() {
         <Route path="/admin/create_survey" element={<CreateSurvey/>}/>
         <Route path="/template" element={<AdminTemplate/>}/>
         <Route path="/released/:id" element={<FormReleased/>}/>
-        <Route path="/result/:surveyID" element={<SurveyResult/>}/>
+        <Route path="/result/:surveyID/:sessionID" element={<SurveyResult/>}/>
       </Routes>
     </div>
   );
