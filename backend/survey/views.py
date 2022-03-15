@@ -1316,12 +1316,13 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
     }
     ```
 
-    ### SubmissionSummary Object
+    ### Submission Summary Object
 
     | Field               | Type                      | Description                                                                                  |
     | ------------------- | ------------------------- | -------------------------------------------------------------------------------------------- |
     | `submission_count`  | `int`                     | Total number of submissions.                                                                 |
-    | `group_by_question` | `QuestionObject`          | The survey's `group_by_question` (could be `null` uf the survey has no `group_by_question`). |
+    | `survey`            | `SurveyObject`            | The session's corresponding survey.                                                          |
+    | `group_by_question` | `SurveyQuestionObject`    | The survey's `group_by_question` (could be `null` if the survey has no `group_by_question`). |
     | `question_summary`  | `[QuestionSummaryObject]` | A list of question summaries, see [Question Summary Object](#question-summary-object).       |
 
     ### Question Summary Object

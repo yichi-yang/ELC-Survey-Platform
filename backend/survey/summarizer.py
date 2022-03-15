@@ -1,4 +1,4 @@
-from .serializers import NestedSurveyQuestionSerializer
+from .serializers import NestedSurveyQuestionSerializer, SurveySerializer
 from statistics import mean, median
 
 
@@ -11,6 +11,9 @@ class SubmissionSummarizer:
 
         # general stats
         summary['submission_count'] = submission_queryset.count()
+
+        # include a copy of the survey object
+        summary['survey'] = SurveySerializer(survey).data
 
         # process group question related stuff
         group_by_question = survey.group_by_question
@@ -29,6 +32,8 @@ class SubmissionSummarizer:
             # include a copy of group by question in the result
             serializer = NestedSurveyQuestionSerializer(group_by_question)
             summary['group_by_question'] = serializer.data
+        else:
+            summary['group_by_question'] = None
 
         # per-question summary
         summary['question_summary'] = list()
