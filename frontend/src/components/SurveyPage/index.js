@@ -63,6 +63,18 @@ export default function SurveyPage() {
         margin: '3vw',
     }
 
+    const alertStyle = {
+        flexDirection: 'column',
+        margin: '3vw',
+        color: 'red'
+    }
+
+    const successStyle = {
+        flexDirection: 'column',
+        margin: '3vw',
+        color: 'green'
+    }
+
     const submitButton = {
         backgroundColor: '#FFC72C',
         textAlign: 'center',
@@ -81,6 +93,12 @@ export default function SurveyPage() {
     const [room, setRoom] = useState('');
     /* Other Questions */
     const [questionList, setQuestionList] = useState([]);
+    /* Required Questions Checked */
+    const [requiredList, setRequiredList] = useState([]);
+    /* Warning: Fill all required questions */
+    const [requiredAlert, setrequiredAlert] = useState(false);
+    /* Success: submitted the form successfully */
+    const [submissionSuccess, setSubmissionSuccess] = useState(false);
     /* Dropdown OnChange*/
     const handleRoomChange = (event) => {
         /* Display value on the dropdown */
@@ -171,12 +189,39 @@ export default function SurveyPage() {
         });
     };
 
-    const submitForm = (res) => {
-        console.log("submit")
-        console.log(res)
-        let submissionData = {"responses": res}
+    const submitForm = (res, requiredCheck) => {
+        /*
+        console.log("submit");
+        console.log(res);
+        console.log("required");
+        console.log(requiredCheck);
+        let hasNotFilled = false;
+        let filledQuestion = res.map((item) => {
+            return item.question
+        })
+        requiredCheck.map((id)=>{
+            if(!filledQuestion.includes(id)){
+                console.log("not found")
+                console.log(id)
+                hasNotFilled = true;
+                setrequiredAlert(true);
+            }
+        })
+        */
+        let submissionData = {"responses": res};
+
         axios
-            .post(`/api/sessions/${sessionID}/submissions/`, submissionData)
+            .post(`/api/sessions/${sessionID}/submissions/`, submissionData).then(r => {
+                if(r.status === 201){
+                    setrequiredAlert(false);
+                    setSubmissionSuccess(true);
+                }
+            }).catch( error => {
+                if(error.response.status === 400){
+                    setrequiredAlert(true);
+                    setSubmissionSuccess(false);
+                }
+            });  
     }
 
 
@@ -214,6 +259,11 @@ export default function SurveyPage() {
                         room_array.push(choice.value)
                     });
                     setRoomList([...room_array]);
+                }
+                if (question.required == true) {
+                    setRequiredList(requiredList => {
+                        return [...requiredList, question.id]
+                    })
                 }
                 setQuestionList(questionList => {
                     return [...questionList, question]
@@ -346,7 +396,9 @@ export default function SurveyPage() {
                     }
                 })}
 
-                <button id="submit" style={submitButton} onClick={() => submitForm(checkList)}>
+                {requiredAlert?(<div style={alertStyle}>Please filled all required questions</div>):null}
+                {submissionSuccess?(<div style={successStyle}>You have successfully submitted the form!</div>):null}
+                <button id="submit" style={submitButton} onClick={() => submitForm(checkList, requiredList)}>
                     <strong>Submit</strong>
                 </button>
             </div>
