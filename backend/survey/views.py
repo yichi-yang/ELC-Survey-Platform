@@ -249,12 +249,12 @@ class SurveyViewSet(viewsets.ModelViewSet):
 
     ## Duplicate Survey
 
-    To duplicate a specific survey, `POST /api/surveys/<id>/duplicate`.  
+    To duplicate a specific survey, `POST /api/surveys/<id>/duplicate/`.  
 
     > Note: duplicating a survey also duplicates all associated questions and responses.  
 
     ``` javascript
-    // POST /api/surveys/x5zMkQe/duplicate
+    // POST /api/surveys/x5zMkQe/duplicate/
 
     // HTTP 201 CREATED
     {

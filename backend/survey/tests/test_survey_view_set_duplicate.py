@@ -114,3 +114,15 @@ class DuplicateSurveyViewSetTests(TestCase):
         choice2.pop('question_id')
         # check if all fields are equal except for id and question_id
         self.assertDictEqual(choice1, choice2)
+        
+    def test_duplicate_invalid_survey(self):
+        self.client.force_authenticate(self.user)
+
+        # duplicate a survey
+        response = self.client.post(
+            f'/api/surveys/asdasd/duplicate/',
+            format='json'
+        )
+        self.assertEqual(response.status_code, 404)
+        detail = response.data.pop('detail')
+        self.assertEqual(detail, "Not found.")

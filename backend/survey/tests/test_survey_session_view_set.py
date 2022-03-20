@@ -57,9 +57,6 @@ class SessionViewSetTests(TestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_list_session(self):
-        """
-        GET /sessions/ lists all sessions
-        """
 
         self.client.force_authenticate(self.user)
 
@@ -100,10 +97,7 @@ class SessionViewSetTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertListEqual(session_data, response.data['results'])
 
-    def test_fetch_question(self):
-        """
-        GET /sessions/<session_id>/ return the session
-        """
+    def test_fetch_session(self):
 
         self.client.force_authenticate(self.user)
 
@@ -112,7 +106,7 @@ class SessionViewSetTests(TestCase):
             'survey': str(self.survey.id)
         }
 
-        # create a question
+        # create a session
         instance = SurveySession(
             survey=self.survey, code=1234, owner=self.user)
         instance.save()
@@ -123,11 +117,24 @@ class SessionViewSetTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertDictEqual(session_data, response.data)
+    
+    def test_fetch_invalid_session(self):
+
+        self.client.force_authenticate(self.user)
+
+        # create a session
+        instance = SurveySession(
+            survey=self.survey, code=1234, owner=self.user)
+        instance.save()
+        # now fetch the session should return the new session
+        response = self.client.get(
+            f'/api/sessions/asdasd/'
+        )
+        self.assertEqual(response.status_code, 404)
+        detail = response.data.pop('detail')
+        self.assertEqual(detail, "Not found.")
 
     def test_delete_sessions(self):
-        """
-        DELETE /sessions/<session_id>/ removes a session
-        """
 
         self.client.force_authenticate(self.user)
 

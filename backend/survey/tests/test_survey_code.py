@@ -39,3 +39,12 @@ class CodeToSessionSetTests(TestCase):
         self.assertEqual(response.status_code, 200)
         survey_id = response.data.pop('survey')
         self.assertEqual(survey_id, self.survey.id)
+    
+    def test_lookup_invalid_code(self):
+        response = self.client.get(
+            f'/api/codes/{1789}/'
+        )
+        self.assertEqual(response.status_code, 404)
+        detail = response.data.pop('detail')
+        self.assertEqual(detail, "Not found.")
+
