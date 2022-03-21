@@ -5,6 +5,7 @@ import IconButton from '@mui/material/IconButton';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import axios from 'axios';
 
+const data= [65, 59, 80, 81, 56];
 
 const resultArea = {
   width: '90%',
@@ -120,14 +121,11 @@ export default function SurveyResult() {
                   {title(i + 1, question.question.title)}
                   {type === 'SA' ? shortAnswer(question) : <div></div>}
                   {/* TODO: ranking and piecharts(selections+multiple) */}
+                  {type === 'MC' ? <PieChart question={question}/> : <div></div>}
+                  {type === 'CB' ? <PieChart question={question}/> : <div></div>}
                 </div>
               );
             })}
-            {title(2, 'Multiple Choice Question Result Example')}
-            <PieChart />
-
-            {title(3, 'Selection Result Example')}
-            <PieChart />
           </div>
           {/* End Result */}
         </div>
