@@ -2,7 +2,9 @@ from django.db.models import QuerySet
 from rest_framework import viewsets, mixins, status
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from rest_framework.exceptions import ValidationError
+import random
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from .models import Survey, SurveyQuestion, SurveyQuestionChoice, SurveySubmission
 from .serializers import (
     SurveySerializer,
@@ -12,21 +14,19 @@ from .serializers import (
 )
 from .models import Survey, SurveyQuestion, SurveySubmission, SurveySession
 from .utils import handle_invalid_hashid, query_param_to_bool
-from .permissions import (
-    IsParentSurveyOwner,
-    CreateOnlyWhenParentSurveyActive
-)
+from .permissions import IsAuthenticatedOrCreateOnly
 from .exceptions import BadQueryParameter
-import random
-from rest_framework.decorators import action
-from rest_framework.response import Response
+from .summarizer import SubmissionSummarizer
 
 # creates another instance of a model with all the same fields
 # except for id
-def duplicateModel(instance):
+
+
+def duplicate_instance(instance):
     instance.pk = None
     instance._state.adding = True
     instance.save()
+
 
 class NestedViewMixIn:
     """
@@ -249,12 +249,12 @@ class SurveyViewSet(viewsets.ModelViewSet):
 
     ## Duplicate Survey
 
-    To duplicate a specific survey, `POST /api/surveys/<id>/duplicate`.  
+    To duplicate a specific survey, `POST /api/surveys/<id>/duplicate/`.  
 
     > Note: duplicating a survey also duplicates all associated questions and responses.  
 
     ``` javascript
-    // POST /api/surveys/x5zMkQe/duplicate
+    // POST /api/surveys/x5zMkQe/duplicate/
 
     // HTTP 201 CREATED
     {
@@ -277,19 +277,19 @@ class SurveyViewSet(viewsets.ModelViewSet):
     def duplicate(self, request, pk=None):
         survey = self.get_object()
         id = survey.id
-        duplicateModel(survey)
+        duplicate_instance(survey)
 
         questions = SurveyQuestion.objects.filter(survey=id).all()
 
         for q in questions:
             q_id = q.id
             q.survey = survey
-            duplicateModel(q)
+            duplicate_instance(q)
 
             choices = SurveyQuestionChoice.objects.filter(question=q_id).all()
             for c in choices:
                 c.question = q
-                duplicateModel(c)
+                duplicate_instance(c)
 
         return Response(SurveySerializer(instance=survey).data, status=status.HTTP_201_CREATED)
 
@@ -869,26 +869,503 @@ class NestedSurveySubmissionViewSet(NestedViewMixIn,
                                     mixins.ListModelMixin,
                                     viewsets.GenericViewSet):
     """
-    API endpoint that allows survey submissions to be created or viewed.
+    API endpoint that allows survey submissions to be viewed or edited.
     Editing a submission is not supported.
+
+    # Field Description
+
+    | Field             | Type               |          | Description                                                            |
+    | ----------------- | ------------------ | -------- | ---------------------------------------------------------------------- |
+    | `id`              | `string`           | readonly | The submission's unique id.                                            |
+    | `submission_time` | `string`           | readonly | The submission time in ISO 8601 format.                                |
+    | `responses`       | `[ResponseObject]` |          | A list of question responses, see [Response Object](#response-object). |
+
+    # Response Object
+
+    A `ResponseObject` represent a response to a question.
+
+    | Field           | Type     |           | Description                                                            |
+    | --------------- | -------- | --------- | ---------------------------------------------------------------------- |
+    | `question`      | `string` |           | The id of the question being responded to.                             |
+    | `choice`        | `string` | optional* | The id of the selected choice if the response involves choices.        |
+    | `text`          | `string` | optional* | The answer to the question of the question requires an answer in text. |
+    | `numeric_value` | `float`  | optional* | The value of the response if it involves numeric values.               |
+
+    The `type` of the question determines if a field marked as **optional\*** is required
+    and how many `ResponseObject` should be included.
+
+    | Type            | Code   | Min #          | Max #          | Required Fields           |
+    | --------------- | ------ | -------------- | -------------- | ------------------------- |
+    | Multiple Choice | `'MC'` | 1              | 1              | `choice`                  |
+    | Checkboxes      | `'CB'` | 1              | `len(choices)` | `choice`                  |
+    | Dropdown        | `'DP'` | 1              | 1              | `choice`                  |
+    | Scale           | `'SC'` | 1              | 1              | `numeric_value`           |
+    | Short Answer    | `'SA'` | 1              | 1              | `text`                    |
+    | Long Answer     | `'PA'` | 1              | 1              | `text`                    |
+    | Ranking         | `'RK'` | `len(choices)` | `len(choices)` | `choice`, `numeric_value` |
+
+    > Note: If a question is not `required`, it is also valid if 0 `ResponseObject`
+    > is included for that question. Otherwise, at least Min # and at most Max #
+    > `ResponseObject` must be included in `responses`.
+
+    # Examples
+
+    ## Make a Submission
+
+    To make a submission to a session, `POST /api/sessions/<sessions_id>/submissions/`.  
+    Anyone can make submission.  
+
+    Suppose we have a survey with the following questions:
+
+    ``` json
+    [
+        {
+            "id": "yO5lED9",
+            "number": 1,
+            "title": "Which is better?",
+            "required": true,
+            "type": "MC",
+            "choices": [
+                {
+                    "id": "m2OkayZ",
+                    "value": "A",
+                    "description": "Star Trek"
+                },
+                {
+                    "id": "WKo1dyZ",
+                    "value": "B",
+                    "description": "Star Wars"
+                }
+            ]
+        },
+        {
+            "id": "R7jNpDG",
+            "number": 2,
+            "title": "Select all valid statements.",
+            "required": true,
+            "type": "CB",
+            "choices": [
+                {
+                    "id": "GDOaMOj",
+                    "value": "A",
+                    "description": "1 + 1 = 2"
+                },
+                {
+                    "id": "LjyRko9",
+                    "value": "B",
+                    "description": "1 + 2 = 3"
+                },
+                {
+                    "id": "D9NXgO6",
+                    "value": "C",
+                    "description": "1 - 1 = 1"
+                }
+            ]
+        },
+        {
+            "id": "dBjywDL",
+            "number": 3,
+            "title": "Which breakout room are you in?",
+            "required": true,
+            "type": "DP",
+            "choices": [
+                {
+                    "id": "M9O2bOA",
+                    "value": "1",
+                    "description": "breakout room 1"
+                },
+                {
+                    "id": "wKoPloR",
+                    "value": "2",
+                    "description": "breakout room 2"
+                },
+                {
+                    "id": "MgyreN6",
+                    "value": "3",
+                    "description": "breakout room 3"
+                },
+                {
+                    "id": "0vNLJol",
+                    "value": "4",
+                    "description": "breakout room 4"
+                },
+                {
+                    "id": "B4OBvO2",
+                    "value": "5",
+                    "description": "breakout room 5"
+                }
+            ]
+        },
+        {
+            "id": "Lo5MY5R",
+            "number": 4,
+            "title": "From 1 to 10, how's your day going?",
+            "required": true,
+            "type": "SC",
+            "range_min": 1.0,
+            "range_max": 10.0,
+            "range_default": 5.0,
+            "range_step": 1.0
+        },
+        {
+            "id": "GajwyDE",
+            "number": 5,
+            "title": "What is your favorite fruit?",
+            "required": true,
+            "type": "SA"
+        },
+        {
+            "id": "O2VeYVd",
+            "number": 6,
+            "title": "Describe the city you live in.",
+            "required": true,
+            "type": "PA"
+        },
+        {
+            "id": "vQVx1jW",
+            "number": 7,
+            "title": "Please rank the following roles:",
+            "required": true,
+            "type": "RK",
+            "range_min": 1.0,
+            "range_max": 5.0,
+            "range_default": 1.0,
+            "range_step": 1.0,
+            "choices": [
+                {
+                    "id": "eMNVmOD",
+                    "value": "A",
+                    "description": "CEO"
+                },
+                {
+                    "id": "wGo71N5",
+                    "value": "B",
+                    "description": "CFO"
+                },
+                {
+                    "id": "DMNxbo0",
+                    "value": "C",
+                    "description": "COO"
+                }
+            ]
+        },
+        {
+            "id": "GrjLWV2",
+            "number": 8,
+            "title": "You don't have to answer this.",
+            "required": false,
+            "type": "SA"
+        }
+    ]
+    ```
+
+    To make a submission to that survey's session:
+
+    ``` javascript
+    // POST /api/sessions/<sessions_id>/submissions/
+    {
+        "responses": [
+            // multiple choice
+            {"question": "yO5lED9", "choice": "m2OkayZ"},
+            // checkboxes
+            {"question": "R7jNpDG", "choice": "GDOaMOj"},
+            {"question": "R7jNpDG", "choice": "LjyRko9"},
+            // dropdown
+            {"question": "dBjywDL", "choice": "wKoPloR"},
+            // scale
+            {"question": "Lo5MY5R", "numeric_value": 8.0},
+            // short answer
+            {"question": "GajwyDE", "text": "apple"},
+            // paragraph
+            {"question": "O2VeYVd", "text": "Describe the city you live in."},
+            // ranking
+            {"question": "vQVx1jW", "choice": "eMNVmOD", "numeric_value": 1.0},
+            {"question": "vQVx1jW", "choice": "wGo71N5", "numeric_value": 2.0},
+            {"question": "vQVx1jW", "choice": "DMNxbo0", "numeric_value": 3.0},
+            // optional question, can be omitted
+            {"question": "GrjLWV2", "text": "optional"}
+        ]
+    }
+
+    // HTTP 201 Created
+    {
+        "id": "7rZoWZ4",
+        "submission_time": "2022-03-05T23:19:07.822730Z",
+        "responses": [
+            {
+                "question": "yO5lED9",
+                "choice": "m2OkayZ"
+            },
+            {
+                "question": "R7jNpDG",
+                "choice": "GDOaMOj"
+            },
+            {
+                "question": "R7jNpDG",
+                "choice": "LjyRko9"
+            },
+            {
+                "question": "dBjywDL",
+                "choice": "wKoPloR"
+            },
+            {
+                "question": "Lo5MY5R",
+                "numeric_value": 8.0
+            },
+            {
+                "question": "GajwyDE",
+                "text": "apple"
+            },
+            {
+                "question": "O2VeYVd",
+                "text": "Describe the city you live in."
+            },
+            {
+                "question": "vQVx1jW",
+                "choice": "eMNVmOD",
+                "numeric_value": 1.0
+            },
+            {
+                "question": "vQVx1jW",
+                "choice": "wGo71N5",
+                "numeric_value": 2.0
+            },
+            {
+                "question": "vQVx1jW",
+                "choice": "DMNxbo0",
+                "numeric_value": 3.0
+            },
+            {
+                "question": "GrjLWV2",
+                "text": "optional"
+            }
+        ]
+    }
+    ```
+
+    ## List Submissions
+
+    You can list all submissions of a specific sessions.  
+    Only authenticated users can list submissions.  
+
+    ``` javascript
+    // GET /api/sessions/<sessions_id>/submissions/
+
+    // HTTP 200 OK
+    {
+        "count": 2,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "id": "7rZoWZ4",
+                "submission_time": "2022-03-05T23:19:07.822730Z",
+                "responses": [
+                    {
+                        "question": "yO5lED9",
+                        "choice": "m2OkayZ"
+                    },
+                    {
+                        "question": "R7jNpDG",
+                        "choice": "GDOaMOj"
+                    },
+                    {
+                        "question": "R7jNpDG",
+                        "choice": "LjyRko9"
+                    },
+                    {
+                        "question": "dBjywDL",
+                        "choice": "wKoPloR"
+                    },
+                    {
+                        "question": "Lo5MY5R",
+                        "numeric_value": 8.0
+                    },
+                    {
+                        "question": "GajwyDE",
+                        "text": "apple"
+                    },
+                    {
+                        "question": "O2VeYVd",
+                        "text": "Describe the city you live in."
+                    },
+                    {
+                        "question": "vQVx1jW",
+                        "choice": "eMNVmOD",
+                        "numeric_value": 1.0
+                    },
+                    {
+                        "question": "vQVx1jW",
+                        "choice": "wGo71N5",
+                        "numeric_value": 2.0
+                    },
+                    {
+                        "question": "vQVx1jW",
+                        "choice": "DMNxbo0",
+                        "numeric_value": 3.0
+                    },
+                    {
+                        "question": "GrjLWV2",
+                        "text": "optional"
+                    }
+                ]
+            }
+            // more submissions ...
+        ]
+    }
+    ```
+
+    ## Fetch Submission
+
+    To fetch a specific submission, `GET /api/sessions/<sessions_id>/submissions/<submission_id>/`.  
+    Only authenticated users can fetch submissions.  
+
+    ``` javascript
+    // GET /api/surveys/<survey_id>/questions/7rZoWZ4/
+
+    // HTTP 200 OK
+
+    {
+        "id": "7rZoWZ4",
+        "submission_time": "2022-03-05T23:19:07.822730Z",
+        "responses": [
+            {
+                "question": "yO5lED9",
+                "choice": "m2OkayZ"
+            },
+            {
+                "question": "R7jNpDG",
+                "choice": "GDOaMOj"
+            },
+            {
+                "question": "R7jNpDG",
+                "choice": "LjyRko9"
+            },
+            {
+                "question": "dBjywDL",
+                "choice": "wKoPloR"
+            },
+            {
+                "question": "Lo5MY5R",
+                "numeric_value": 8.0
+            },
+            {
+                "question": "GajwyDE",
+                "text": "apple"
+            },
+            {
+                "question": "O2VeYVd",
+                "text": "Describe the city you live in."
+            },
+            {
+                "question": "vQVx1jW",
+                "choice": "eMNVmOD",
+                "numeric_value": 1.0
+            },
+            {
+                "question": "vQVx1jW",
+                "choice": "wGo71N5",
+                "numeric_value": 2.0
+            },
+            {
+                "question": "vQVx1jW",
+                "choice": "DMNxbo0",
+                "numeric_value": 3.0
+            },
+            {
+                "question": "GrjLWV2",
+                "text": "optional"
+            }
+        ]
+    }
+    ```
+
+    ## Delete Submission
+
+    To delete a specific submission, `DELETE /api/sessions/<sessions_id>/submissions/<submission_id>/`.  
+    Only authenticated users can delete submissions.  
+
+    ``` javascript
+    // DELETE /api/sessions/<sessions_id>/submissions/<submission_id>/
+
+    // HTTP 204 No Content
+    ```
+
+    ## Submission Summary
+
+    To get a summary of all submissions,  `GET /api/sessions/<sessions_id>/summarize/`.  
+    Only authenticated users can fetch summaries.  
+
+    ``` javascript
+    // GET /api/sessions/4wNwX6O/submissions/summarize/
+
+    // HTTP 200 OK
+
+    // Returns a SubmissionSummaryObject
+    {
+        "submission_count": 5,
+        // A copy of the survey's group_by_question
+        "group_by_question": {
+            "id": "dBjywDL",
+            "title": "Which breakout room are you in?",
+            // ...
+        },
+        "question_summary": [
+            // Question Summary Objects
+        ]
+    }
+    ```
+
+    ### Submission Summary Object
+
+    | Field               | Type                      | Description                                                                                  |
+    | ------------------- | ------------------------- | -------------------------------------------------------------------------------------------- |
+    | `submission_count`  | `int`                     | Total number of submissions.                                                                 |
+    | `survey`            | `SurveyObject`            | The session's corresponding survey.                                                          |
+    | `group_by_question` | `SurveyQuestionObject`    | The survey's `group_by_question` (could be `null` if the survey has no `group_by_question`). |
+    | `question_summary`  | `[QuestionSummaryObject]` | A list of question summaries, see [Question Summary Object](#question-summary-object).       |
+
+    ### Question Summary Object
+
+    | Field      | Type                            | Description                                                                                               |
+    | ---------- | ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+    | `question` | `QuestionObject`                | The question being summarized.                                                                            |
+    | `all`      | `SummaryDetailObject`           | A summary of all the submissions for this question, see [Summary Detail Object](#summary-detail-object).  |
+    | `by_group` | `{string: SummaryDetailObject}` | Summaries grouped by submissions' group choices. The keys correspond to `group_by_question`'s choice ids. |
+
+    ### Summary Detail Object
+
+    | Field                          | Type                        | Question Types         | Description                                                                                                                                                                              |
+    | ------------------------------ | --------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | `count`                        | `{string: int}`             | `'MC'`, `'CB'`, `'DP'` | The number of times a choice is chosen. The keys correspond to the choices' ids.                                                                                                         |
+    | `answers`                      | `[string]`                  | `'SA'`, `'PA'`         | A list of all the responses.                                                                                                                                                             |
+    | `min`, `max`, `mean`, `median` | `float`                     | `'MC'`*, `'SC'`        | The statistics of submission responses. These are also included for `'MC'` questions with choices convertible to `float`s.                                                               |
+    | `ranking`                      | `{string: StatisticObject}` | `'RK'`                 | The statistics for each thing to be ranked. The keys correspond to the choices' ids. The `StatisticObject` includes `min`, `max`, `mean`, `median`, similar to that of `'MC'` questions. |
     """
     serializer_class = NestedSurveySubmissionSerializer
-    permission_classes = [
-        IsParentSurveyOwner | CreateOnlyWhenParentSurveyActive
-    ]
+    permission_classes = [IsAuthenticatedOrCreateOnly]
 
     # NestedViewMixIn will set
     # self.parent_instance = Survey.objects.get(pk=self.kwargs['survey_pk'])
     # before .get, .post, etc. are called.
-    parent_model_queryset = Survey.objects.all()
-    parent_pk_name = 'survey_pk'
+    parent_model_queryset = SurveySession.objects.all()
+    parent_pk_name = 'session_pk'
 
     @handle_invalid_hashid('Survey')
     def get_queryset(self):
         return SurveySubmission.objects\
-            .select_related('survey')\
-            .filter(survey=self.kwargs['survey_pk'])\
-            .prefetch_related('responses')
+            .filter(session=self.kwargs['session_pk'])\
+            .prefetch_related('responses')\
+            .prefetch_related('responses__question')
+
+    @action(detail=False, methods=['get'])
+    def summarize(self, request, session_pk=None):
+
+        session = self.parent_instance
+        submission_queryset = self.get_queryset()
+        summarizer = SubmissionSummarizer(session, submission_queryset)
+
+        return Response(summarizer.data)
 
 
 class SurveySessionViewSet(mixins.CreateModelMixin,
@@ -1004,7 +1481,8 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
 
     # Related Endpoints
 
-    To do reverse lookups using `code`, see [code to session endpoint](/api/codes/).
+    To do reverse lookups using `code`, see [code to session endpoint](/api/codes/).  
+    To make submissions or view results, use `/api/sessions/<id>/submissions/`.
     """
     serializer_class = SurveySessionSerializer
     # we can change this later
@@ -1012,7 +1490,11 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
 
     @handle_invalid_hashid('Survey')
     def get_queryset(self):
-        queryset = SurveySession.objects.filter(owner=self.request.user.id)
+        queryset = SurveySession.objects.all()
+
+        # hide other users' sessions when listing
+        if self.action == 'list':
+            queryset = queryset.filter(owner=self.request.user.id)
 
         survey = self.request.query_params.get('survey')
         if survey is not None:
@@ -1021,10 +1503,15 @@ class SurveySessionViewSet(mixins.CreateModelMixin,
         return queryset
 
     def perform_create(self, serializer):
-        code = random.randint(1000, 9999)
-        while SurveySession.objects.filter(code=code).exists():
-            code = random.randint(1000, 9999)
-        serializer.save(code=code)
+        min_val, max_val = 1000, 10000
+        while True:
+            for _ in range(10):
+                code = random.randint(min_val, max_val - 1)
+                if not SurveySession.objects.filter(code=code).exists():
+                    serializer.save(code=code)
+                    return
+            min_val *= 10
+            max_val *= 10
 
 
 class CodeToSessionViewSet(mixins.RetrieveModelMixin,

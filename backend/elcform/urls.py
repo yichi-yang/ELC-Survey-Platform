@@ -18,6 +18,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('__debug__/', include('debug_toolbar.urls')),
     path('api/', include('survey.urls')),
     path('api/api-auth/', include('rest_framework.urls')),
     path('api/auth/', include('dj_rest_auth.urls')),

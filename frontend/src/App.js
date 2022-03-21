@@ -16,11 +16,11 @@ function App() {
         <Route path="/"  element={<StartPage/>}/>
         <Route path="/student" element={<StudentLogIn/>}/>
         <Route path="/admin" element={<AdminLogIn/>}/>
-        <Route path="/survey/:surveyID" element={<SurveyPage/>}/>
+        <Route path="/survey/:sessionID" element={<SurveyPage/>}/>
         <Route path="/admin/create_survey" element={<CreateSurvey/>}/>
         <Route path="/template" element={<AdminTemplate/>}/>
         <Route path="/released/:id" element={<FormReleased/>}/>
-        <Route path="/result/:surveyID" element={<SurveyResult/>}/>
+        <Route path="/result/:surveyID/:sessionID" element={<SurveyResult/>}/>
       </Routes>
     </div>
   );

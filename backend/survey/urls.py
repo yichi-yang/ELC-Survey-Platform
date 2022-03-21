@@ -29,7 +29,13 @@ survey_router.register(
     NestedSurveyQuestionViewSet,
     basename='survey-question'
 )
-survey_router.register(
+
+session_router = routers.NestedSimpleRouter(
+    router,
+    r'sessions',
+    lookup='session'
+)
+session_router.register(
     r'submissions',
     NestedSurveySubmissionViewSet,
     basename='survey-submission'
@@ -44,4 +50,5 @@ router.register(
 urlpatterns = [
     path(r'', include(router.urls)),
     path(r'', include(survey_router.urls)),
+    path(r'', include(session_router.urls)),
 ]

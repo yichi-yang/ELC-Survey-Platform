@@ -32,7 +32,7 @@ export default function StudentLogIn(){
   function enterSurvey(){
     axios.get(`/api/codes/${code}/`).then(res=>{
       if(res.status===200){
-        navigate(`/survey/${res.data.survey}`);
+        navigate(`/survey/${res.data.id}`, { state: { surveyID: res.data.survey } })
       }
     }).catch((e)=>{}).finally(()=>{
       // TODO: error message

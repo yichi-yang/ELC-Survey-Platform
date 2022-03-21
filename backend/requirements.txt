@@ -2,6 +2,7 @@ asgiref==3.4.1
 autopep8==1.6.0
 dj-rest-auth==2.2.3
 Django==4.0.1
+django-debug-toolbar==3.2.4
 django-hashid-field==3.3.3
 djangorestframework==3.13.1
 djangorestframework-simplejwt==5.0.0

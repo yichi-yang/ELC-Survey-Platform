@@ -342,6 +342,19 @@ const AlertDialogView =(props)=> {
     setOpen(false);
   };
 
+  const navigate = useNavigate();
+
+  const handleConfirm = () => {
+    axios.get(`/api/sessions/?survey=${props.id}`).then(r=>{
+      if(r.status===200 && r.data.results.length>0){
+          navigate(`/result/${props.id}/${r.data.results[0].id}`)
+      }else{
+          axios.post('/api/sessions/',{"survey":props.id}).then(res=>{
+              if(res.status===201){navigate(`/result/${props.id}/${r.data.id}`)}})
+      }
+    });
+  }
+
   return (
     <div>
       <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
@@ -363,7 +376,7 @@ const AlertDialogView =(props)=> {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Decline</Button>
-          <Button href={`result/${props.id}`} autoFocus>
+          <Button onClick={handleConfirm} autoFocus>
             Confirm
           </Button>
         </DialogActions>
@@ -454,8 +467,10 @@ export default function AdminTemplate(){
         let nameList = [];
         let idList = [];
         res.data.results.forEach((q) => {
-          nameList.push(q.title);
-          idList.push(q.id);
+          if(!q.draft){
+            nameList.push(q.title);
+            idList.push(q.id);
+          }
         });
         setsurveyName(nameList);
         setSurveyId(idList);
@@ -464,6 +479,7 @@ export default function AdminTemplate(){
     }).catch((error) => { console.log(error) });
   }, []);
   console.log(surveyName)
+  const navigate = useNavigate();
   return(
     <Grid container rowSpacing={2}>
       <Grid item xs={12}>
@@ -498,7 +514,10 @@ export default function AdminTemplate(){
       <Grid item xs={10}></Grid>
       <Grid item xs={2}>
 
-      <IconButton color="primary" aria-label="add to shopping cart" href='/admin/create_survey'>
+      <IconButton color="primary" aria-label="add to shopping cart" onClick={()=>{
+            localStorage.setItem('surveyID','null');
+            navigate('/admin/create_survey');
+      }}>
 
         <AddCircleOutlineIcon style={{color:'#FFC72C'}} sx={{ fontSize: 80 }}/>
       </IconButton>
