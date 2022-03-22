@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PieChart from './PieChart';
+import DataTable from './table';
 import { useParams, useNavigate } from 'react-router-dom';
 import IconButton from '@mui/material/IconButton';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -123,6 +124,7 @@ export default function SurveyResult() {
                   {/* TODO: ranking and piecharts(selections+multiple) */}
                   {type === 'MC' ? <PieChart question={question}/> : <div></div>}
                   {type === 'CB' ? <PieChart question={question}/> : <div></div>}
+                  {type === 'RK' ? <DataTable question={question} groups={groups}/> : <div></div>}
                 </div>
               );
             })}
