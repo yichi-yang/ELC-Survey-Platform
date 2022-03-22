@@ -17,7 +17,7 @@ function App() {
         <Route path="/student" element={<StudentLogIn/>}/>
         <Route path="/admin" element={<AdminLogIn/>}/>
         <Route path="/survey/:sessionID" element={<SurveyPage/>}/>
-        <Route path="/admin/create_survey" element={<CreateSurvey/>}/>
+        <Route path="/admin/create_survey/:updateID" element={<CreateSurvey/>}/>
         <Route path="/template" element={<AdminTemplate/>}/>
         <Route path="/released/:id" element={<FormReleased/>}/>
         <Route path="/result/:surveyID/:sessionID" element={<SurveyResult/>}/>

@@ -249,7 +249,7 @@ const AlertDialogUpdate =(props)=> {
   const handleUpdate = () => {
     axios.post(`/api/surveys/${props.id}/duplicate/`).then((response) => {
       localStorage.setItem('surveyID', response.data.id);
-      navigate('/admin/create_survey');
+      navigate(`/admin/create_survey/${props.id}`);
    }).catch((error) => { console.log(error) });
   };
 
@@ -516,7 +516,7 @@ export default function AdminTemplate(){
 
       <IconButton color="primary" aria-label="add to shopping cart" onClick={()=>{
             localStorage.setItem('surveyID','null');
-            navigate('/admin/create_survey');
+            navigate(`/admin/create_survey/new`);
       }}>
 
         <AddCircleOutlineIcon style={{color:'#FFC72C'}} sx={{ fontSize: 80 }}/>

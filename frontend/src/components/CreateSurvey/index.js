@@ -12,14 +12,14 @@ import CircleIcon from '@mui/icons-material/Circle';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import SquareIcon from '@mui/icons-material/Square';
 import Switch from '@mui/material/Switch';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import Alert from './Alert';
 import RankQuestion from './Ranking';
 
-export default function CreateSurvey(props) {
+export default function CreateSurvey() {
   const navigate = useNavigate();
-
+  const { updateID } = useParams();
   const headingStyle = {
     height: '15vh',
     width: '100vw',
@@ -164,8 +164,14 @@ export default function CreateSurvey(props) {
   function createComplete() {
     axios.patch(`/api/surveys/${surveyID}/`,{"draft": false}).then(res=>{
       if(res.status===200){
-        localStorage.removeItem('surveyID');
-        navigate('/template');
+        if(updateID!=='new'){
+          axios.delete(`/api/surveys/${updateID}`).then(()=>{
+            localStorage.removeItem('surveyID');
+            navigate('/template');
+          })}else{
+            localStorage.removeItem('surveyID');
+            navigate('/template');
+          }
       }else{
         // TODO: maybe refresh?
       }
@@ -465,6 +471,7 @@ export default function CreateSurvey(props) {
       axios
         .get(`/api/surveys/${surveyID}/`)
         .then((res) => {
+          console.log(res);
           if (res.status === 200) {
             setTitle(res.data.title);
             setDescription(res.data.description);
@@ -483,7 +490,7 @@ export default function CreateSurvey(props) {
           res.data.forEach((q) => {
             if (q.type === 'DP') {
               setGrouped(true);
-              // setGroupID(q.id);
+              setGroupID(q.id);
               setGroupNum(q.choices.length);
               let tmp = q.choices[0].description;
               let cut = q.choices.length.toString.length + 1;
