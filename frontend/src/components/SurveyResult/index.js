@@ -78,6 +78,21 @@ export default function SurveyResult() {
     );
   }
 
+  function PieChartAnswer(answers){
+    return(
+      <div>
+      {answers.by_group?<div>
+        {groups.map(group=>(
+          <div style={{margin:'1%'}}>
+            <strong>{group.description}</strong>
+            <PieChart question={answers} index={group.id}/>
+          </div>
+        ))}
+      </div>:<div> {answers.all?<PieChart question={answers} index={0}/>:null} </div>}
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '100%' }}>
       {/* Heading */}
@@ -122,7 +137,7 @@ export default function SurveyResult() {
                   {title(i + 1, question.question.title)}
                   {type === 'SA' ? shortAnswer(question) : <div></div>}
                   {/* TODO: ranking and piecharts(selections+multiple) */}
-                  {type === 'MC' ? <PieChart question={question}/> : <div></div>}
+                  {type === 'MC' ? PieChartAnswer(question) : <div></div>}
                   {type === 'CB' ? <PieChart question={question}/> : <div></div>}
                   {type === 'RK' ? <DataTable question={question} groups={groups}/> : <div></div>}
                 </div>

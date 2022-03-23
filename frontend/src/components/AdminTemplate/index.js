@@ -32,6 +32,8 @@ const ResponsiveAppBar = () => {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
   const [anchorElUser, setAnchorElUser] = React.useState(null);
 
+  const navigate = useNavigate();
+
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
   };
@@ -46,6 +48,10 @@ const ResponsiveAppBar = () => {
   const handleCloseUserMenu = () => {
     setAnchorElUser(null);
   };
+
+  const logout = ()=>{
+    navigate(`/`);
+  }
 
   return (
     <AppBar position="static" style={{ background: '#990000'}}>
@@ -140,7 +146,7 @@ const ResponsiveAppBar = () => {
             >
               {settings.map((setting) => (
                 <MenuItem key={setting} onClick={handleCloseUserMenu}>
-                  <Typography textAlign="center">{setting}</Typography>
+                  <Typography textAlign="center" onClick={logout}>{setting}</Typography>
                 </MenuItem>
               ))}
             </Menu>
@@ -485,11 +491,11 @@ export default function AdminTemplate(){
       <Grid item xs={12}>
         <ResponsiveAppBar/>
       </Grid>
-      <Grid item xs={9.5}>
+      <Grid item xs={9}>
         <strong style={{color:'black', fontSize: '1.5vw', marginLeft:'5vw'}}>Survey Template</strong>
       </Grid>
       
-      <Grid item xs={2.5}>
+      <Grid item xs={3}>
         <Search>
         <SearchIconWrapper>
         <SearchIcon />
