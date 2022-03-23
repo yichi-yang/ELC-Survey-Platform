@@ -81,9 +81,26 @@
     the backend code, the dev server should automatically perform a hot reload
     to reflect the changes.
 
-## API Documentation
+# API Documentation
 
-The hope is the API will be self documenting and you'll be able to read the
-documentation on the browsable API pages. I'm currently working on writing
-unit tests to make sure the survey/question endpoints work as expected. I'll add
-the documentation once I'm done with the unit tests.
+## Authentication
+* Login: `POST /api/auth/login/`
+* Token Refresh: `POST /api/auth/token/refresh/`
+
+## Surveys
+* Create Survey : `POST /api/surveys/`
+* List Survey : `GET /api/surveys/`
+* Fetch Survey : `GET /api/surveys/<survey_id>/`
+* Edit Survey (Partial Update): `PATCH /api/surveys/<survey_id>/`
+* Edit Survey (Full Update) : `PUT /api/surveys/<survey_id>/`
+* Delete Survey : `DELETE /api/surveys/<survey_id>/`
+* Duplicate Survey : `POST /api/surveys/<survey_id>/duplicate/`
+
+## Sessions
+* Create Session : `POST /api/sessions/`
+* List Sessions : `Get /api/sessions/`
+* Fetch Session : `Get /api/sessions/<session_id>/`
+* Delete Session : `DELETE /api/sessions/<session_id>`
+
+## Codes
+* Fetch Code : `GET /api/codes/<code>`
