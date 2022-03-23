@@ -23,6 +23,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import Input from '@mui/material/Input';
 
 const pages = [];
 const settings = ['Logout'];
@@ -484,8 +485,26 @@ export default function AdminTemplate(){
     }
     }).catch((error) => { console.log(error) });
   }, []);
-  console.log(surveyName)
+
   const navigate = useNavigate();
+  const [filterDisplay, setFilterDisplay] = useState([]);
+  const [word, setWord] = useState("");
+
+  const handleChange = (e)=>{
+    setWord(e);
+    if (word !== "") {
+      
+      let newList = [];
+
+      newList = surveyName.filter(name =>
+        name.includes(word)
+      );
+      setFilterDisplay(newList);
+    } else {
+      setFilterDisplay(surveyName);
+    }
+  };
+
   return(
     <Grid container rowSpacing={2}>
       <Grid item xs={12}>
@@ -501,20 +520,31 @@ export default function AdminTemplate(){
         <SearchIcon />
         </SearchIconWrapper>
         <StyledInputBase
-        placeholder="Search…"
-        inputProps={{ 'aria-label': 'search' }}
+        placeholder='Search by Keywords'
+        defaultValue={word}
+        onChange={e => handleChange(e.target.value)}
         />
         </Search>
       </Grid>
 
-      {surveyName.map((name,index) => (
+      {word.length==0 ?
+      surveyName.map((name,index) => (
         <Grid container style={{marginTop:'1.5vw'}}>
           <Grid item xs={1.5}></Grid>
           <Grid item xs={10.5}>
             <SurveyBar name={name} id={surveyId[index]}/>
           </Grid>
         </Grid>
-      ))}
+      )):
+      filterDisplay.map((name,index) => (
+        <Grid container style={{marginTop:'1.5vw'}}>
+          <Grid item xs={1.5}></Grid>
+          <Grid item xs={10.5}>
+            <SurveyBar name={name} id={surveyId[index]}/>
+          </Grid>
+        </Grid>
+      ))
+      }
       
       
       <Grid item xs={10}></Grid>
