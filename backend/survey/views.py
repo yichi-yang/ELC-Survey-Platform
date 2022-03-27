@@ -286,7 +286,7 @@ class SurveyViewSet(viewsets.ModelViewSet):
             q.survey = survey
             duplicate_instance(q)
 
-            if q.title =='Which Group are you in?':
+            if survey.group_by_question is not None and survey.group_by_question.id == q_id:
                 survey.group_by_question = q
                 survey.save()
 
