@@ -22,7 +22,7 @@ export default function SurveyPage() {
     const { sessionID } = useParams();
 
     const location = useLocation();
-    const {surveyID} =location.state;
+    const { surveyID } = location.state;
 
     const bodyStyle = {
         display: 'flex',
@@ -208,20 +208,20 @@ export default function SurveyPage() {
             }
         })
         */
-        let submissionData = {"responses": res};
+        let submissionData = { "responses": res };
 
         axios
             .post(`/api/sessions/${sessionID}/submissions/`, submissionData).then(r => {
-                if(r.status === 201){
+                if (r.status === 201) {
                     setrequiredAlert(false);
                     setSubmissionSuccess(true);
                 }
-            }).catch( error => {
-                if(error.response.status === 400){
+            }).catch(error => {
+                if (error.response.status === 400) {
                     setrequiredAlert(true);
                     setSubmissionSuccess(false);
                 }
-            });  
+            });
     }
 
 
@@ -310,7 +310,7 @@ export default function SurveyPage() {
                         return (
                             <div style={questionMargin}>
                                 <FormControl>
-                                    <div>Question {q.number}. {q.title}</div>
+                                    {q.required ? (<div>Question {q.number}. {q.title}<strong>(*)</strong> </div>) : (<div>Question {q.number}. {q.title}</div>)}
                                     <RadioGroup
                                         aria-labelledby="demo-radio-buttons-group-label"
                                         defaultValue="female"
@@ -330,7 +330,7 @@ export default function SurveyPage() {
                         return (
                             <div style={questionMargin}>
                                 <FormControl component="fieldset" variant="standard">
-                                    <div>Question {q.number}. {q.title}</div>
+                                    {q.required ? (<div>Question {q.number}. {q.title}<strong>(*)</strong> </div>) : (<div>Question {q.number}. {q.title}</div>)}
                                     <FormLabel component="legend">You may select more than one options</FormLabel>
                                     <FormGroup>
                                         {
@@ -353,7 +353,7 @@ export default function SurveyPage() {
                     else if (q.type === 'SA' || q.type === 'PA') {
                         return (
                             <div style={questionMargin}>
-                                <div>Question {q.number}. {q.title}</div>
+                                {q.required ? (<div>Question {q.number}. {q.title}<strong>(*)</strong> </div>) : (<div>Question {q.number}. {q.title}</div>)}
                                 <TextField id={q.id} label="Type here..." variant="standard"
                                     style={{ width: '70%' }} onChange={newHandleTextChange} />
                             </div>
@@ -366,8 +366,7 @@ export default function SurveyPage() {
                         }
                         return (
                             <div style={questionMargin}>
-                                <div>Question {q.number}. {q.title}</div>
-
+                                {q.required ? (<div>Question {q.number}. {q.title}<strong>(*)</strong> </div>) : (<div>Question {q.number}. {q.title}</div>)}
                                 {q.choices.map((item) => {
                                     return (
                                         <div
@@ -396,8 +395,8 @@ export default function SurveyPage() {
                     }
                 })}
 
-                {requiredAlert?(<div style={alertStyle}>Please filled all required questions</div>):null}
-                {submissionSuccess?(<div style={successStyle}>You have successfully submitted the form!</div>):null}
+                {requiredAlert ? (<div style={alertStyle}>Please filled all required questions</div>) : null}
+                {submissionSuccess ? (<div style={successStyle}>You have successfully submitted the form!</div>) : null}
                 <button id="submit" style={submitButton} onClick={() => submitForm(checkList, requiredList)}>
                     <strong>Submit</strong>
                 </button>
