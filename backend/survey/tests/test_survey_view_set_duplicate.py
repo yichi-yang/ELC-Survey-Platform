@@ -55,7 +55,7 @@ class DuplicateSurveyViewSetTests(TestCase):
 
         survey_id = response_data.pop('id')
 
-        # check that a new survery is made
+        # check that a new survey is made
         self.assertNotEqual(survey_id, self.survey.id)
         self.assertTrue(Survey.objects.filter(pk=survey_id).exists())
         # check that the old survey wasn't overriden
@@ -126,3 +126,38 @@ class DuplicateSurveyViewSetTests(TestCase):
         self.assertEqual(response.status_code, 404)
         detail = response.data.pop('detail')
         self.assertEqual(detail, "Not found.")
+
+    def test_group_by_question(self):
+        self.client.force_authenticate(self.user)
+
+        group_question = SurveyQuestion(
+            number=1,
+            title='Which Group are you in?',
+            type='MC',
+            required=False,
+            survey=self.survey
+        )
+        group_question.save()
+
+        # add group_by_question to survey
+        self.survey.group_by_question = group_question
+        self.survey.save()
+
+        response = self.client.post(
+            f'/api/surveys/{self.survey.id}/duplicate/',
+            format='json'
+        )
+
+        response_data = response.data
+
+        self.assertEqual(response.status_code, 201)
+
+        new_group_by_question = response_data.pop('group_by_question')
+        # check that the group by question on the new survey !=
+        # the group by question on the old survey
+        self.assertNotEqual(new_group_by_question, group_question)
+
+        new_group_by_question = SurveyQuestion.objects.filter(id=new_group_by_question)
+
+        # check that the new group by question asks for the group
+        self.assertEqual(list(new_group_by_question)[0].title, 'Which Group are you in?')

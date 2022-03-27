@@ -286,6 +286,10 @@ class SurveyViewSet(viewsets.ModelViewSet):
             q.survey = survey
             duplicate_instance(q)
 
+            if q.title =='Which Group are you in?':
+                survey.group_by_question = q
+                survey.save()
+
             choices = SurveyQuestionChoice.objects.filter(question=q_id).all()
             for c in choices:
                 c.question = q
