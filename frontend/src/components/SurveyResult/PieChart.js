@@ -7,12 +7,11 @@ Chart.register(Tooltip);
 
 function PieChart(props){
 
-  console.log(props.question.question.choices)
-
   const labels = [];
   const data=[];
 
-  Object.entries(props.question.all.count).map(([key, value]) => {
+  Object.entries(props.index==0?props.question.all.count:props.question.by_group[props.index].count).map(([key, value]) => {
+    console.log();
     data.push(value);
   })
 

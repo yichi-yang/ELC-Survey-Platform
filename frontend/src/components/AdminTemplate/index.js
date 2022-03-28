@@ -23,6 +23,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import Input from '@mui/material/Input';
 
 const pages = [];
 const settings = ['Logout'];
@@ -31,6 +32,8 @@ const settings = ['Logout'];
 const ResponsiveAppBar = () => {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
   const [anchorElUser, setAnchorElUser] = React.useState(null);
+
+  const navigate = useNavigate();
 
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
@@ -46,6 +49,10 @@ const ResponsiveAppBar = () => {
   const handleCloseUserMenu = () => {
     setAnchorElUser(null);
   };
+
+  const logout = ()=>{
+    navigate(`/`);
+  }
 
   return (
     <AppBar position="static" style={{ background: '#990000'}}>
@@ -140,7 +147,7 @@ const ResponsiveAppBar = () => {
             >
               {settings.map((setting) => (
                 <MenuItem key={setting} onClick={handleCloseUserMenu}>
-                  <Typography textAlign="center">{setting}</Typography>
+                  <Typography textAlign="center" onClick={logout}>{setting}</Typography>
                 </MenuItem>
               ))}
             </Menu>
@@ -478,37 +485,66 @@ export default function AdminTemplate(){
     }
     }).catch((error) => { console.log(error) });
   }, []);
-  console.log(surveyName)
+
   const navigate = useNavigate();
+  const [filterDisplay, setFilterDisplay] = useState([]);
+  const [word, setWord] = useState("");
+
+  const handleChange = (e)=>{
+    setWord(e);
+    if (word !== "") {
+      
+      let newList = [];
+
+      newList = surveyName.filter(name =>
+        name.includes(word)
+      );
+      setFilterDisplay(newList);
+    } else {
+      setFilterDisplay(surveyName);
+    }
+  };
+
   return(
     <Grid container rowSpacing={2}>
       <Grid item xs={12}>
         <ResponsiveAppBar/>
       </Grid>
-      <Grid item xs={9.5}>
+      <Grid item xs={9}>
         <strong style={{color:'black', fontSize: '1.5vw', marginLeft:'5vw'}}>Survey Template</strong>
       </Grid>
       
-      <Grid item xs={2.5}>
+      <Grid item xs={3}>
         <Search>
         <SearchIconWrapper>
         <SearchIcon />
         </SearchIconWrapper>
         <StyledInputBase
-        placeholder="Search…"
-        inputProps={{ 'aria-label': 'search' }}
+        placeholder='Search by Keywords'
+        defaultValue={word}
+        onChange={e => handleChange(e.target.value)}
         />
         </Search>
       </Grid>
 
-      {surveyName.map((name,index) => (
+      {word.length==0 ?
+      surveyName.map((name,index) => (
         <Grid container style={{marginTop:'1.5vw'}}>
           <Grid item xs={1.5}></Grid>
           <Grid item xs={10.5}>
             <SurveyBar name={name} id={surveyId[index]}/>
           </Grid>
         </Grid>
-      ))}
+      )):
+      filterDisplay.map((name,index) => (
+        <Grid container style={{marginTop:'1.5vw'}}>
+          <Grid item xs={1.5}></Grid>
+          <Grid item xs={10.5}>
+            <SurveyBar name={name} id={surveyId[index]}/>
+          </Grid>
+        </Grid>
+      ))
+      }
       
       
       <Grid item xs={10}></Grid>
