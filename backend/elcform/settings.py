@@ -24,8 +24,11 @@ SECRET_KEY = 'django-insecure-i&kex6#udp^l0s-lst34mwqpeuj&i!=3a=fre4lv#7*e=1=kq9
 HASHID_FIELD_SALT = 'c9Lrync^SeeZ8qP2hVoK#@XnD&M6jY&N'
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# TODO: change this to False before deploying
 DEBUG = True
 
+# TODO: add the domain name here
+# e.g. ALLOWED_HOSTS = ['example.com']
 ALLOWED_HOSTS = []
 
 
@@ -79,7 +82,7 @@ WSGI_APPLICATION = 'elcform.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
-
+# TODO: change this to connect to production database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -106,6 +109,17 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# TODO: consider setting HTTP Strict Transport Security header
+# after you finish deploying the backend. 
+# 
+# Warning: Setting this incorrectly can irreversibly (for some time) break your
+#          site. Set this after you are sure things work.
+# https://docs.djangoproject.com/en/4.0/ref/middleware/#http-strict-transport-security
+
+# SECURE_HSTS_SECONDS = 31536000 # 31536000 sec = 1 year
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
@@ -122,7 +136,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = 'django-static/'
+# TODO: set STATIC_ROOT based on the webserver configuration
+# STATIC_ROOT = '/var/www/html/django-static'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -136,8 +152,8 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
+        # 'rest_framework.authentication.SessionAuthentication',
+        # 'rest_framework.authentication.BasicAuthentication',
         'dj_rest_auth.jwt_auth.JWTCookieAuthentication'
     ],
     'DEFAULT_THROTTLE_CLASSES': [
