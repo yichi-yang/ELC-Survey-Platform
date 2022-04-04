@@ -155,7 +155,7 @@ export default function CreateSurvey() {
   }
 
   function deleteSurvey() {
-    axios.delete(`/api/surveys/${surveyID}`).then(() => {
+    axios.delete(`/api/surveys/${surveyID}/`).then(() => {
       localStorage.removeItem('surveyID');
       navigate('/template');
     });
