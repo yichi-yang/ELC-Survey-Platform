@@ -39,7 +39,7 @@ class DuplicateSurveyViewSetTests(TestCase):
             f'/api/surveys/{self.survey.id}/duplicate/',
             format='json'
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_duplicate_survey(self):
         self.client.force_authenticate(self.user)
