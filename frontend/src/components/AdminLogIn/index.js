@@ -63,6 +63,7 @@ export default function AdminLogIn() {
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'column',
+        width: '100%'
       }}
     >
       <div style={{ marginBottom: '5vw' }}>
