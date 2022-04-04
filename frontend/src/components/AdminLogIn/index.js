@@ -23,13 +23,14 @@ export default function AdminLogIn() {
     padding: '1vw 5vw',
     textTransform: 'none',
     fontSize: '100%',
-    margin: '5vw',
+    margin: '4vw',
     fontWeight: 'bold',
     minWidth: '20%',
   };
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState(false);
 
   function logIn() {
     axios.post(
@@ -42,15 +43,19 @@ export default function AdminLogIn() {
         TokenStorage.setAccessToken(res.data.access_token);
         TokenStorage.setRefreshToken(res.data.refresh_token);
         navigate('/template');
+      }else{
+        setErrorMessage(true);
       }
-    }).catch((error) => { console.log(error) });
+    }).catch((error) => { console.log(error); setErrorMessage(true) });
   }
 
   function changePassword(e) {
+    setErrorMessage(false);
     setPassword(e.target.value);
   }
 
   function changeUsername(e) {
+    setErrorMessage(false);
     setUsername(e.target.value);
   }
 
@@ -89,6 +94,8 @@ export default function AdminLogIn() {
         value={password}
         onChange={changePassword}
       />
+
+      <div style={{color:'#FFC72C', fontSize:'100%'}} hidden={!errorMessage} >Incorrect Password or Username, Please Try Again</div>
 
       <Button variant="contained" style={buttonStyle} onClick={logIn}>
         Login
