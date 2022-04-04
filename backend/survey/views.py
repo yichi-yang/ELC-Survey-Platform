@@ -278,6 +278,8 @@ class SurveyViewSet(viewsets.ModelViewSet):
         survey = self.get_object()
         id = survey.id
         duplicate_instance(survey)
+        survey.draft = True
+        survey.save()
 
         questions = SurveyQuestion.objects.filter(survey=id).all()
 
