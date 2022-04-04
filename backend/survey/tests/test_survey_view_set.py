@@ -59,7 +59,7 @@ class SurveyViewSetTests(TestCase):
             },
             format='json'
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def get_survey_id_set(self, data):
         return set(survey['id'] for survey in data['results'])
@@ -212,7 +212,7 @@ class SurveyViewSetTests(TestCase):
             {'description': "this doesn't work"},
             format='json'
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_delete_survey(self):
         """
@@ -254,7 +254,7 @@ class SurveyViewSetTests(TestCase):
         self.client.force_authenticate()
 
         response = self.client.delete(f'/api/surveys/{survey2_id}/')
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
         # user1 should be able to delete the survey
         self.client.force_authenticate(user1)

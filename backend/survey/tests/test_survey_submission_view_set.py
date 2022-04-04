@@ -181,7 +181,7 @@ class SurveySubmissionViewSetTests(TestCase):
         response = self.client.get(
             f'/api/sessions/Dy07DNq/submissions/{submission.id}/'
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
         self.client.force_authenticate(self.user)
 
@@ -200,7 +200,7 @@ class SurveySubmissionViewSetTests(TestCase):
         response = self.client.delete(
             f'/api/sessions/Dy07DNq/submissions/{submission.id}/'
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
         self.client.force_authenticate(self.user)
 
@@ -213,7 +213,7 @@ class SurveySubmissionViewSetTests(TestCase):
         """ Only authenticated users can list submissions. """
 
         response = self.client.get('/api/sessions/Dy07DNq/submissions/')
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
         self.client.force_authenticate(self.user)
 

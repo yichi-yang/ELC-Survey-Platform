@@ -54,7 +54,7 @@ class SessionViewSetTests(TestCase):
             },
             format='json'
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_list_session(self):
 
