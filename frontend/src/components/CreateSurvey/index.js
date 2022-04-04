@@ -116,7 +116,7 @@ export default function CreateSurvey() {
 
   const [options, setOptions] = useState([]);
 
-  const [option, setOption] = useState('Add Option/Item');
+  const [option, setOption] = useState('Add Option/Item Here');
 
   const [required, setRequired] = useState(false);
 
@@ -225,6 +225,7 @@ export default function CreateSurvey() {
       axios
         .patch(`/api/surveys/${surveyID}/questions/${groupID}/`, {
           choices: choices,
+          title: `Which ${name} are you in?`,
         })
         .then((res) => {});
     }
@@ -471,7 +472,6 @@ export default function CreateSurvey() {
       axios
         .get(`/api/surveys/${surveyID}/`)
         .then((res) => {
-          console.log(res);
           if (res.status === 200) {
             setTitle(res.data.title);
             setDescription(res.data.description);
@@ -775,7 +775,7 @@ export default function CreateSurvey() {
 
               <IconButton
                 style={iconButtonStyle}
-                disabled={options.length === 0}
+                disabled={options.length === 0 && questionType !== 2}
                 onClick={(e) => {
                   e.preventDefault();
                   appendQuestion(true);
