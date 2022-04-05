@@ -49,10 +49,10 @@ export default function StudentLogIn(){
          <strong style={{color:'#FFC72C', fontSize: '5vw'}}>ELC Survey Platform</strong>
       </div>
 
-      <TextField id="surveyNumber" label="Survey Number" variant="filled" value={code} onChange={e=>setCode(e.target.value)} style={textfield}/>
+      <TextField id="surveyNumber" label="Survey Number" variant="filled" value={code} onChange={e=>{setCode(e.target.value); setErrorMessage(false)}} style={textfield}/>
       <div style={{color:'#FFC72C', fontSize:'80%', marginTop:'-4vw'}} hidden={!errorMessage} >Survey Unfound, Please Try Again</div>
       
-      <Button variant='contained' 
+      <Button variant='contained'
           style={buttonStyle} onClick={enterSurvey} disabled={code.length===0}>
             Enter
       </Button>
