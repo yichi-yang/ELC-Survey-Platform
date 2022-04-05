@@ -46,15 +46,9 @@ function FormReleased() {
 
     useEffect(() => {
 
-        axios.get(`/api/sessions/?survey=${id}`).then(r=>{
-            if(r.status===200 && r.data.results.length>0){
-                setCode(r.data.results[0].code)
-            }else{
-                axios.post('/api/sessions/',{"survey":id}).then(res=>{
-                    if(res.status===201){setCode(res.data.code)}})
-            }
-        });
-        
+        axios.post('/api/sessions/',{"survey":id}).then(res=>{
+            if(res.status===201){setCode(res.data.code)}})
+
     });
 
         
