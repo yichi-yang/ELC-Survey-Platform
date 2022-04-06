@@ -200,7 +200,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-const AlertDialog =(props)=> {
+const AlertDialogEmpty =(props)=> {
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -209,6 +209,15 @@ const AlertDialog =(props)=> {
 
   const handleClose = () => {
     setOpen(false);
+  };
+
+  const handleEmpty = () =>{
+    axios.get(`/api/sessions/?survey=${props.id}`).then(r => {
+       r.data.results.map((item)=>(
+        axios.delete(`/api/sessions/${item.id}/`).then(() => {}).catch((error) => { console.log(error) })
+       ))
+       window.location.reload();
+    }).catch((error) => { console.log(error) });
   };
 
   return (
@@ -232,7 +241,7 @@ const AlertDialog =(props)=> {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Decline</Button>
-          <Button onClick={handleClose} autoFocus>
+          <Button onClick={handleEmpty} autoFocus>
             Confirm
           </Button>
         </DialogActions>
@@ -462,7 +471,7 @@ const SurveyBar = (props) => {
           <AlertDialogDelete name="Delete" id={props.id}/>
         </Grid>
         <Grid item xs={1.2}>
-          <AlertDialog name="Empty"/>
+          <AlertDialogEmpty name="Empty" id={props.id}/>
         </Grid>
         <Grid item xs={1.2}>
           <AlertDialogView name="View" id={props.id}/>
@@ -506,7 +515,6 @@ export default function AdminTemplate(){
   const handleChange = (e)=>{
     setWord(e);
     if (word !== "") {
-      
       let newList = [];
 
       newList = surveyName.filter(name =>
