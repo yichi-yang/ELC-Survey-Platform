@@ -50,7 +50,7 @@ export default function StudentLogIn(){
       </div>
 
       <TextField id="surveyNumber" label="Survey Number" variant="filled" value={code} onChange={e=>{setCode(e.target.value); setErrorMessage(false)}} style={textfield}/>
-      <div style={{color:'#FFC72C', fontSize:'80%', marginTop:'-4vw'}} hidden={!errorMessage} >Survey Unfound, Please Try Again</div>
+      <div style={{color:'#FFC72C', fontSize:'80%', marginTop:'-4vw'}} hidden={!errorMessage} >Survey Not Found, Please Try Again</div>
       
       <Button variant='contained'
           style={buttonStyle} onClick={enterSurvey} disabled={code.length===0}>
