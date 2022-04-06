@@ -138,7 +138,7 @@ export default function SurveyResult() {
                   {type === 'SA' ? shortAnswer(question) : <div></div>}
                   {/* TODO: ranking and piecharts(selections+multiple) */}
                   {type === 'MC' ? PieChartAnswer(question) : <div></div>}
-                  {type === 'CB' ? <PieChart question={question}/> : <div></div>}
+                  {type === 'CB' ? PieChartAnswer(question): <div></div>}
                   {type === 'RK' ? <DataTable question={question} groups={groups}/> : <div></div>}
                 </div>
               );
