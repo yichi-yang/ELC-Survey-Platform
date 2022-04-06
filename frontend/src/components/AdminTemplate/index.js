@@ -357,7 +357,7 @@ const AlertDialogView =(props)=> {
           navigate(`/result/${props.id}/${r.data.results[0].id}`)
       }else{
           axios.post('/api/sessions/',{"survey":props.id}).then(res=>{
-              if(res.status===201){navigate(`/result/${props.id}/${r.data.id}`)}})
+              if(res.status===201){navigate(`/result/${props.id}/${res.data.id}`)}})
       }
     });
   }
@@ -394,6 +394,9 @@ const AlertDialogView =(props)=> {
 
 
 const AlertDialogRelease =(props)=> {
+
+  const navigate = useNavigate();
+
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -403,6 +406,16 @@ const AlertDialogRelease =(props)=> {
   const handleClose = () => {
     setOpen(false);
   };
+
+  const handleRelease = () =>{
+    axios.get(`/api/sessions/?survey=${props.id}`).then(r=>{
+      if(r.status===200 && r.data.results.length>0){
+        axios.delete(`/api/sessions/${r.data.results[0].id}/`).then(res=>navigate(`/released/${props.id}`));
+      }else{
+        navigate(`/released/${props.id}`);
+      }
+    });
+  }
 
   return (
     <div>
@@ -425,7 +438,7 @@ const AlertDialogRelease =(props)=> {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Decline</Button>
-          <Button href={`released/${props.id}`} autoFocus>
+          <Button onClick={handleRelease} autoFocus>
             Confirm
           </Button>
         </DialogActions>

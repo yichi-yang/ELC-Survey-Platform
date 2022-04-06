@@ -599,7 +599,7 @@ class SurveyQuestionViewSetTests(TestCase):
             question_data,
             format='json'
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_list_question(self):
         """
@@ -895,7 +895,7 @@ class SurveyQuestionViewSetTests(TestCase):
             },
             format='json'
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_delete_question(self):
         """
@@ -955,7 +955,7 @@ class SurveyQuestionViewSetTests(TestCase):
         response = self.client.delete(
             f'/api/surveys/{self.survey.id}/questions/{question.id}/'
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
         # authenticated users can delete questions
         self.client.force_authenticate(self.user)
