@@ -399,10 +399,12 @@ those webserver is outside the scope of this guide.
 
 After setting up the backend and the webserver, setting up the frontend is
 relatively easy. All you need to do is to build the frontend and copy the
-files into static file directory.
+files into the static file directory.
 
-Note depending on the server configuration it might be faster (or easier if you
-have node and npm installed) to build the frontend on you local machine.
+> Note: Building the frontend requires > 1.8 GB of RAM. If your server has
+> < 2 GB of RAM, building the frontend can lead to thrashing and take forever
+> to finish. In this case you can build the frontend on your local machine and
+> use scp or sftp to copy `build` to your server.
 
 1. Install nodejs and npm.
 
@@ -450,7 +452,7 @@ have node and npm installed) to build the frontend on you local machine.
 5. Now if you go to `https://example.com/` (replace with your domain) you should
     see the frontend working.
 
-## Wrapping Up
+## Security Considerations
 
 ### Following Best Practices
 
@@ -468,3 +470,73 @@ connect to your domain name via an insecure connection.
 
 Read more about HSTS [here](https://docs.djangoproject.com/en/4.0/ref/middleware/#http-strict-transport-security).
 Remember setting up HSTS incorrectly can break your site permanently.
+
+## Updating ELC Form
+
+If the frontend or the backend change in the future, you may want to deploy
+a new version to your server. You can easily update them following these steps:
+
+### Updating the Backend
+
+> Note: You don't need to stop Gunicorn to update the backend.
+
+1. Pull the updated codebase. Make sure `settings.py` is not overwritten.
+    (you could `git stash` it and `git stash pop` after you pull the changes).
+
+2. Run `python manage.py check --deploy` again to make sure your settings look
+    good (see [Backend Configuration](#backend-configuration)).
+
+3. Run `python manage.py migrate` to apply new migrations (if any).
+
+4. Run `sudo systemctl restart gunicorn`. This will gracefully restart Gunicorn
+    and pick up the changes.
+
+Now your server should be running the updated backend API.
+
+### Updating the Frontend
+
+You just need to repeat the steps in [Frontend](#frontend) and overwrite the
+files in the static file directory (e.g. `/var/www/html`) with the new `build`.
+
+## Setting Up Accounts
+
+After deploying the application, you need to set up super user accounts for
+administrators (i.e. yourself) and accounts for ELC instructors to create and
+manage surveys.
+
+### Create Superuser Account
+
+Go back to the backend directory and run the following command:
+
+``` bash
+python manage.py createsuperuser
+```
+
+Then follow the instructions to set up an superuser account. You need to provide
+a username and a password, but an email address is optional (hit enter to skip).
+
+If you later forget the superuser password, just repeat this step to create a
+new one.
+
+> Note: Remember to activated the virtual environment if you haven't already.
+
+### Create Accounts for Instructors
+
+1. Go to `https://example.com/django-admin/` (replace with your domain) and log
+    in with the superuser account you created.
+
+2. Under 'Authentication and Authorization' you will find 'Users'. Click that
+    and you should be presented with a list of existing users.
+
+3. Click 'ADD USER' button on the top right.
+
+4. Enter username and password for the new account and click 'SAVE'.
+
+After you click 'SAVE', the user is created and you don't need to change
+anything else. Give the credentials of this account to ELC instructors and they
+should be able to log in on the frontend and create surveys.
+
+If an instructor forgets his or her password, find his or her account in the
+list of users in step 2, click that username to open "Change user" page, and
+than you can reset the password following the link that says "you can change the
+password using this form" (next to "Password").
