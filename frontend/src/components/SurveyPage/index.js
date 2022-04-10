@@ -16,12 +16,14 @@ import { useState, useEffect } from 'react';
 import { useParams } from "react-router-dom";
 import { DataObject } from "@mui/icons-material";
 import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function SurveyPage() {
 
     const { sessionID } = useParams();
 
     const location = useLocation();
+    const navigate = useNavigate();
     const { surveyID } = location.state;
 
     const bodyStyle = {
@@ -58,6 +60,11 @@ export default function SurveyPage() {
         flexDirection: 'column'
     }
 
+    const descrptionStyle = {
+        flexDirection: 'column',
+        margin: '3vw',
+    }
+
     const questionMargin = {
         flexDirection: 'column',
         margin: '3vw',
@@ -87,6 +94,8 @@ export default function SurveyPage() {
     };
     /* Survey Title */
     const [title, setTitle] = useState('Survey A');
+    /* Survey Description */
+    const [description, setDescription] = useState('');
     /* Group Number */
     const [group, setRoomList] = useState([]);
     /* Change group number */
@@ -215,6 +224,7 @@ export default function SurveyPage() {
                 if (r.status === 201) {
                     setrequiredAlert(false);
                     setSubmissionSuccess(true);
+                    navigate(`/confirmation`);
                 }
             }).catch(error => {
                 if (error.response.status === 400) {
@@ -248,7 +258,10 @@ export default function SurveyPage() {
     useEffect(() => {
         axios
             .get(`/api/surveys/${surveyID}/`)
-            .then((res) => { setTitle(res.data.title) })
+            .then((res) => { 
+                setTitle(res.data.title);
+                setDescription(res.data.description);
+            })
         axios
             .get(`/api/surveys/${surveyID}/questions/`)
             .then((res) => res.data.map((question) => {
@@ -278,7 +291,7 @@ export default function SurveyPage() {
             </div>
             <div style={content}>
 
-
+                <div style={descrptionStyle}>{description}</div>
                 {/* Radio group selection */}
                 {questionList.map((q) => {
                     if (q.type === 'DP') {
@@ -286,7 +299,7 @@ export default function SurveyPage() {
                             <div style={questionMargin}>
                                 <FormControl style={{ width: '40%' }}>
                                     {/* Room number selection */}
-                                    <InputLabel id="demo-simple-select-label">Room Number</InputLabel>
+                                    <InputLabel id="demo-simple-select-label">Room Number<strong>(*)</strong></InputLabel>
                                     <Select
                                         name={q.id}
                                         value={room}
