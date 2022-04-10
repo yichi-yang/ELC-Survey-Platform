@@ -3,11 +3,12 @@ import {Routes, Route} from 'react-router-dom';
 import StartPage from './components/StartPage';
 import StudentLogIn from './components/StudentLogIn';
 import AdminLogIn from './components/AdminLogIn';
-import SurveyPage from './components/SurveyPage'
+import SurveyPage from './components/SurveyPage';
 import {AdminTemplate} from './components/AdminTemplate';
 import CreateSurvey from './components/CreateSurvey';
 import FormReleased from './components/FormReleased';
 import SurveyResult from './components/SurveyResult';
+import ConfirmationPage from './components/SurveyPage/confirmation';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/template" element={<AdminTemplate/>}/>
         <Route path="/released/:id" element={<FormReleased/>}/>
         <Route path="/result/:surveyID/:sessionID" element={<SurveyResult/>}/>
+        <Route path="/confirmation" element={<ConfirmationPage/>}/>
       </Routes>
     </div>
   );
