@@ -17,6 +17,7 @@ import axios from 'axios';
 import Alert from './Alert';
 import RankQuestion from './Ranking';
 import BackspaceIcon from '@mui/icons-material/Backspace';
+import AddBoxIcon from '@mui/icons-material/AddBox';
 
 // Survey edits are stored to database syncrously. When refreshed, created questions and edits should remain
 export default function CreateSurvey() {
@@ -370,6 +371,12 @@ export default function CreateSurvey() {
         window.location.reload();
       }
   });
+  }
+
+  // append newly created option item to list
+  function addOption(){
+    setOptions(options.concat(option));
+    setOption('');
   }
 
 
@@ -873,8 +880,7 @@ export default function CreateSurvey() {
                     onChange={(e) => setOption(e.target.value)}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter' && option !== '') {
-                        setOptions(options.concat(option));
-                        setOption('');
+                        addOption();
                       }
                     }}
                     style={{
@@ -886,6 +892,7 @@ export default function CreateSurvey() {
                       paddingLeft: '0.5vw',
                     }}
                   />
+                   <IconButton style={option===''?{color:'grey'}:{color:'#1976d2'}} onClick={addOption} disabled={option===''}><AddBoxIcon style={{fontSize:'65%'}}/></IconButton>
                 </div>
               </div>
             ) : (
