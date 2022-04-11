@@ -154,7 +154,7 @@ export default function CreateSurvey() {
 
   //hooks for question create
   const [questionType, setType] = useState(0);
-  const [question, setQuestion] = useState('Question');
+  const [question, setQuestion] = useState('');
   const [options, setOptions] = useState([]); //options for MC or CB question
   const [option, setOption] = useState(''); //single option content
   const [required, setRequired] = useState(false); //if question is required or optional
@@ -283,7 +283,7 @@ export default function CreateSurvey() {
   //reset the NEW Question create states
   function reset() {
     setType(0);
-    setQuestion('Question');
+    setQuestion('');
     setOptions([]);
     setOption('');
     setRequired(false);
@@ -792,21 +792,25 @@ export default function CreateSurvey() {
                 justifyContent: 'space-between',
               }}
             >
+            <div style={{ width: '75%', display:'flex', flexWrap:'nowrap', alignItems:'flex-end', margin:'0.5vw'}}>
+              <div><strong>Question:</strong></div>
               {/* Question content */}
               <input
+                name='question'
                 type="text"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 style={{
                   minHeight: '20px',
-                  width: '50%',
-                  margin: '0.5vw',
+                  width:'70%',
+                  marginLeft: '0.5vw',
                   border: 'none',
                   borderBottom: 'solid 1px #C4C4C4',
                   fontWeight: 'bold',
                   textAlign: 'center',
                 }}
               />
+            </div>
             {/* Droptdown box for question types */}
               <FormControl sx={{ m: 1, minWidth: 50 }}>
                 <Select
@@ -925,7 +929,7 @@ export default function CreateSurvey() {
             >
               <IconButton
                 style={iconButtonStyle}
-                disabled={options.length === 0 && questionType !== 2}
+                disabled={question.length===0||(options.length === 0 && questionType !== 2)}
                 onClick={(e) => {
                   e.preventDefault();
                   finishQuestion();
@@ -937,7 +941,7 @@ export default function CreateSurvey() {
               {/* Append the question to questions list, and keep the question-create-box with the same states of the contents */}
               <IconButton
                 style={iconButtonStyle}
-                disabled={options.length === 0 && questionType !== 2}
+                disabled={question.length===0||(options.length === 0 && questionType !== 2)}
                 onClick={(e) => {
                   e.preventDefault();
                   finishQuestion(true);
