@@ -145,7 +145,11 @@ export default function CreateSurvey() {
 
   const [createAlertOpen, setCreateAlertOpen] = useState(false); //for Create button
 
+  const [deleteQuestionIndex, setDeleteQuestionIndex] = useState(-1); // keeps record of the index of the question to be deleted
+
   const [forceOptionsUpdate, setForceOptionsUpdate] = useState(1);
+
+  const [editQuestion, setEditQuestion] = useState(undefined);
 
   //hooks for question create
   const [questionType, setType] = useState(0);
@@ -167,6 +171,7 @@ export default function CreateSurvey() {
   function alertCancel() {
     setCancelAlertOpen(false);
     setCreateAlertOpen(false);
+    setDeleteQuestionIndex(-1);
   }
 
   function deleteSurvey() {
@@ -303,17 +308,70 @@ export default function CreateSurvey() {
       .then();
   };
 
-  function deleteQuestion(e) {
-    let questionId = questions[e.target.id].id;
+  //remove the question from created list 
+  function deleteQuestion() {
+    let questionId = questions[deleteQuestionIndex].id;
     axios
       .delete(`/api/surveys/${surveyID}/questions/${questionId}/`)
       .then((res) => {
         if (res.status === 204) {
-          questions.splice(e.target.id, 1);
+          questions.splice(deleteQuestionIndex, 1);
           setUpdate(!shouldRender);
+          setDeleteQuestionIndex(-1); //reset to -1 for index to close alert box
+        }else {
+          window.location.reload();
         }
       });
   }
+
+  // set question's states for editing question in the box
+  function editOnclick(i){
+    let item = questions[i];
+    setEditQuestion(i);
+    setOptions([...questions[i].options]); //deep copy
+    setType(item.type);
+    setRequired(item.required);
+    setQuestion(item.question);
+    setRankMax(item.range_max);
+    setRankMin(item.range_min);
+    setRankStep(item.range_step);
+    setOption('');
+    setNewQuestion(true); //open the question edit box 
+  } 
+
+  // update the question to the database after edits
+  function updateQuestion(duplicate=false, requestBody){
+    axios.put(`/api/surveys/${surveyID}/questions/${questions[editQuestion].id}/`, requestBody).then(res=>{
+      if (res.status === 200) {
+        let newItem = {
+          options: options,
+          question: question,
+          type: questionType,
+          required: required,
+          id: res.data.id,
+          range_min: rankMin,
+          range_max: rankMax,
+          range_step: rankStep,
+        };
+
+        let tmp = [...questions];
+        tmp[editQuestion]=newItem;
+        setQuestions(tmp); //update to question list
+        setEditQuestion(undefined); //change the edit status back to undefined
+       
+        if (!duplicate) { 
+          reset(); //if duplicate is not clicked, then just reset the question's statuses
+          setNewQuestion(false);
+        }else{ // otherwise, post a new question
+          appendQuestion(false,requestBody);
+        }
+
+      } else {
+        window.location.reload();
+      }
+  });
+  }
+
 
   //edit created Option's content (Onchange)
   function editOption(e,i){
@@ -329,8 +387,7 @@ export default function CreateSurvey() {
     setForceOptionsUpdate(forceOptionsUpdate+1);
   }
 
-  //apped to question list when a new question is created
-  function appendQuestion(duplicate = false) {
+  function finishQuestion(duplicate = false) {
     //Prepare API request content
     let requestContent = {
       number: questions.length + 1,
@@ -374,9 +431,23 @@ export default function CreateSurvey() {
         range_default: rd,
       };
     }
+    
+    console.log(editQuestion);
+    //If it is updating a question
+    if(editQuestion!==undefined){
+      updateQuestion(duplicate,requestContent);
+    }
+    // otherwise, create a new question
+    else{
+      appendQuestion(duplicate, requestContent);
+    }
+  }
 
+   //apped to question list when a new question is created
+  function appendQuestion(duplicate = false, requestBody){
+    console.log(requestBody);
     axios
-      .post(`/api/surveys/${surveyID}/questions/`, requestContent)
+      .post(`/api/surveys/${surveyID}/questions/`, requestBody)
       .then((res) => {
         if (res.status === 201) {
           let newItem = {
@@ -390,7 +461,7 @@ export default function CreateSurvey() {
             range_step: rankStep,
           };
           setQuestions(questions.concat(newItem)); //add to question list
-          if (!duplicate) {
+          if (!duplicate) { //if not duplicate, reset states and close question creation box
             reset();
             setNewQuestion(false);
           }
@@ -424,6 +495,17 @@ export default function CreateSurvey() {
   function listQuestions() {
     return (
       <div>
+         <Alert
+          id="deleteAlert"
+          open={deleteQuestionIndex>-1}
+          message="Are you sure you want to delete this question?"
+          content="Once confirmed, it will be discarded"
+          choiceOne="No"
+          choiceTwo="Yes"
+          handleOne={alertCancel}
+          close={alertCancel}
+          handleTwo={deleteQuestion}
+        />
         {questions.map((q, i) => {
           return (
             <div style={{ margin: '2% 6%', width:'90vw' }} key={i}>
@@ -433,12 +515,15 @@ export default function CreateSurvey() {
               <Button
                 id={i}
                 onClick={(e) => {
-                  deleteQuestion(e);
+                 setDeleteQuestionIndex(i);
                 }}
                 size='small'
-                style={{ color: '#990000' }}
+                style={{ color: 'grey',marginLeft:'1.5%' }}
               >
                 Delete
+              </Button>
+              <Button onClick={e=>editOnclick(i)} size='small' style={{color:'#990000'}}>
+                Edit
               </Button>
               {/* for multiple choice and selections */}
               {q.type === 0 || q.type === 1 ? (
@@ -718,7 +803,7 @@ export default function CreateSurvey() {
             {/* Droptdown box for question types */}
               <FormControl sx={{ m: 1, minWidth: 50 }}>
                 <Select
-                  defaultValue={0}
+                  value={questionType}
                   onChange={typeChange}
                   inputProps={{ 'aria-label': 'Without label' }}
                   style={{ height: '3vw' }}
@@ -836,7 +921,7 @@ export default function CreateSurvey() {
                 disabled={options.length === 0 && questionType !== 2}
                 onClick={(e) => {
                   e.preventDefault();
-                  appendQuestion();
+                  finishQuestion();
                 }}
               >
                 <DoneOutlineIcon />
@@ -848,7 +933,7 @@ export default function CreateSurvey() {
                 disabled={options.length === 0 && questionType !== 2}
                 onClick={(e) => {
                   e.preventDefault();
-                  appendQuestion(true);
+                  finishQuestion(true);
                 }}
               >
                 <ContentCopyIcon />
