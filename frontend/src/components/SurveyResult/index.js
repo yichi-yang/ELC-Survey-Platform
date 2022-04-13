@@ -55,16 +55,21 @@ export default function SurveyResult() {
 
   function shortAnswer(answers) {
     const answerList = (list) =>{
-      return(
-        list.map((answer, i) => {
-          return (
-            <div
-              style={{ margin: '0.3% 1%', fontSize: '0.8em' }}
-              key={i}
-            >{`${i + 1}. ${answer}`}</div>
-          );
-        })
-      )
+      
+      if(list.length===0){
+        return <div style={{color:'grey',fontSize:'0.8em', margin: '0.3% 1%'}}>No Answers Yet</div>
+      }else{
+        return(
+          list.map((answer, i) => {
+            return (
+              <div
+                style={{ margin: '0.3% 1%', fontSize: '0.8em' }}
+                key={i}
+              >{`${i + 1}. ${answer}`}</div>
+            );
+          })
+        )
+      }
     }
     return (
       <div>
