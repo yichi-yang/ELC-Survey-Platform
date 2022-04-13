@@ -838,7 +838,8 @@ export default function CreateSurvey() {
                   >
                     {rankValues(rankMin, 'Minimum', setRankMin, rankMax, '')}
                     {rankValues(rankMax, 'Maximum', setRankMax, '', rankMin)}
-                    {rankValues(rankStep, 'Step', setRankStep, '', 1)}
+                    {/* {rankValues(rankStep, 'Step', setRankStep, '', 1)}  */}
+                    {/* This section is commented out per request. */}
                   </div>
                 ) : (
                   <div></div>
