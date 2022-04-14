@@ -792,7 +792,7 @@ export default function CreateSurvey() {
                 justifyContent: 'space-between',
               }}
             >
-            <div style={{ width: '75%', display:'flex', flexWrap:'nowrap', alignItems:'flex-end', margin:'0.5vw'}}>
+            <div style={{ width: '70%', display:'flex', flexWrap:'nowrap', alignItems:'flex-end', margin:'0.5vw'}}>
               <div><strong>Question:</strong></div>
               {/* Question content */}
               <input
