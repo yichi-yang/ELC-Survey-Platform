@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import TextField from '@mui/material/TextField';
 import Button from '@material-ui/core/Button';
+import Container from '@mui/material/Container';
+import Stack from '@mui/material/Stack';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { TokenStorage } from '../../utils';
@@ -11,26 +13,34 @@ export default function AdminLogIn() {
   const textfield = {
     backgroundColor: 'white',
     border: 'solid 1px #FFC72C',
-    width: '40%',
-    margin: '1vw',
-    minWidth: '200px',
+    width: '100%',
+    marginTop: '3rem',
+    minWidth: '200px'
   };
 
   const buttonStyle = {
     backgroundColor: '#880808',
     boxShadow: 'none',
     color: 'white',
-    padding: '1vw 5vw',
+    lineHeight: '3rem',
     textTransform: 'none',
-    fontSize: '100%',
-    margin: '4vw',
+    fontSize: '1rem',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    marginTop: '4rem',
     fontWeight: 'bold',
-    minWidth: '20%',
+    width: '100%',
+    maxWidth: '20rem'
   };
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState(false);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    logIn();
+  }
 
   function logIn() {
     axios.post(
@@ -43,7 +53,7 @@ export default function AdminLogIn() {
         TokenStorage.setAccessToken(res.data.access_token);
         TokenStorage.setRefreshToken(res.data.refresh_token);
         navigate('/template');
-      }else{
+      } else {
         setErrorMessage(true);
       }
     }).catch((error) => { console.log(error); setErrorMessage(true) });
@@ -59,12 +69,6 @@ export default function AdminLogIn() {
     setUsername(e.target.value);
   }
 
-  function handleEnter(e) {
-    if(e.key === 'Enter') {
-      logIn()
-    }
-  }
-
   return (
     <div
       style={{
@@ -74,40 +78,48 @@ export default function AdminLogIn() {
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'column',
-        width: '100%'
+        paddingLeft: '10vw',
+        paddingRight: '10vw'
       }}
     >
-      <div style={{ marginBottom: '5vw' }}>
-        <strong style={{ color: '#FFC72C', fontSize: '4vw' }}>
-          Admin Login
-        </strong>
-      </div>
 
-      <TextField
-        id="username"
-        label="Username"
-        variant="filled"
-        style={textfield}
-        value={username}
-        onChange={changeUsername}
-        onKeyDown={handleEnter}
-      />
-      <TextField
-        id="password"
-        type="password"
-        label="Password"
-        variant="filled"
-        style={textfield}
-        value={password}
-        onChange={changePassword}
-        onKeyDown={handleEnter}
-      />
+      <Container maxWidth="sm" style={{ width: '100%' }}>
+        <Stack align="center">
+          <div style={{ marginBottom: '1rem', textAlign: "center" }}>
+            <strong style={{ color: '#FFC72C', fontSize: '3rem', }}>
+              Admin Login
+            </strong>
+          </div>
 
-      <div style={{color:'#FFC72C', fontSize:'100%'}} hidden={!errorMessage} >Incorrect Password or Username, Please Try Again</div>
+          <form onSubmit={handleSubmit}>
+            <TextField
+              id="username"
+              label="Username"
+              variant="filled"
+              style={textfield}
+              value={username}
+              onChange={changeUsername}
+            />
+            <TextField
+              id="password"
+              type="password"
+              label="Password"
+              variant="filled"
+              style={textfield}
+              value={password}
+              onChange={changePassword}
+            />
 
-      <Button variant="contained" style={buttonStyle} onClick={logIn}>
-        Login
-      </Button>
+            <div style={{ color: '#FFC72C', fontSize: '1rem', marginTop: '2rem' }} hidden={!errorMessage} >
+              Incorrect Password or Username, Please Try Again
+            </div>
+
+            <Button variant="contained" style={buttonStyle} type="submit">
+              Login
+            </Button>
+          </form>
+        </Stack>
+      </Container>
     </div>
   );
 }
