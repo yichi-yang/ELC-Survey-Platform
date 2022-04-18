@@ -1,62 +1,100 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
 import TextField from '@mui/material/TextField';
 import Button from '@material-ui/core/Button';
+import Container from '@mui/material/Container';
+import Stack from '@mui/material/Stack';
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-export default function StudentLogIn(){
+export default function StudentLogIn() {
   const navigate = useNavigate();
 
   const textfield = {
     backgroundColor: 'white',
-    border:'solid 1px #FFC72C',
-    width:'40%',
-    margin: '5vw',
-    marginTop: '7vw',
-    fontSize:'1.2vw'
-  }
+    border: 'solid 1px #FFC72C',
+    width: '100%',
+    marginTop: '3rem',
+    minWidth: '200px'
+  };
 
   const buttonStyle = {
-    backgroundColor:'#880808', 
-    boxShadow:'none',
+    backgroundColor: '#880808',
+    boxShadow: 'none',
     color: 'white',
-    padding: '1vw 5vw',
+    lineHeight: '3rem',
     textTransform: 'none',
-    fontSize:'80%',
-    margin: '4vw',
+    fontSize: '1rem',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    marginTop: '4rem',
     fontWeight: 'bold',
-    minWidth: '20%',
-  }
+    width: '100%',
+    maxWidth: '20rem'
+  };
 
   const [code, setCode] = useState('');
   const [errorMessage, setErrorMessage] = useState(false);
 
-  function enterSurvey(){
-    axios.get(`/api/codes/${code}/`).then(res=>{
-      if(res.status===200){
+  function handleSubmit(e) {
+    e.preventDefault();
+    enterSurvey();
+  }
+
+  function enterSurvey() {
+    axios.get(`/api/codes/${code}/`).then(res => {
+      if (res.status === 200) {
         navigate(`/survey/${res.data.id}`, { state: { surveyID: res.data.survey } })
-      }else{
+      } else {
         setErrorMessage(true);
       }
-    }).catch((e)=>{}).finally(()=>{
+    }).catch((e) => { }).finally(() => {
       setErrorMessage(true);
     })
   }
 
-  return(
-    <div style={{backgroundColor:'#990000', minHeight: '100vh', display: 'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', width:'100%'}}>
-      <div> 
-         <strong style={{color:'#FFC72C', fontSize: '5vw'}}>ELC Survey Platform</strong>
-      </div>
+  return (
+    <div
+      style={{
+        backgroundColor: '#990000',
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        paddingLeft: '10vw',
+        paddingRight: '10vw'
+      }}
+    >
 
-      <TextField id="surveyNumber" label="Survey Number" variant="filled" value={code} onChange={e=>{setCode(e.target.value); setErrorMessage(false)}} style={textfield}/>
-      <div style={{color:'#FFC72C', fontSize:'80%', marginTop:'-4vw'}} hidden={!errorMessage} >Survey Not Found, Please Try Again</div>
-      
-      <Button variant='contained'
-          style={buttonStyle} onClick={enterSurvey} disabled={code.length===0}>
-            Enter
-      </Button>
+      <Container maxWidth="sm" style={{ width: '100%' }}>
+        <Stack align="center">
+          <div style={{ marginBottom: '1rem', textAlign: "center" }}>
+            <strong style={{ color: '#FFC72C', fontSize: '3rem', }}>
+              ELC Survey Platform
+            </strong>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <TextField id="surveyNumber"
+              label="Survey Number"
+              variant="filled"
+              value={code}
+              onChange={e => { setCode(e.target.value); setErrorMessage(false) }}
+              style={textfield} />
+
+            <div style={{ color: '#FFC72C', fontSize: '1rem', marginTop: '2rem' }} hidden={!errorMessage} >
+              Survey Not Found, Please Try Again
+            </div>
+
+            <Button variant='contained'
+              style={buttonStyle}
+              disabled={code.length === 0}
+              type='submit'>
+              Enter
+            </Button>
+          </form>
+        </Stack>
+      </Container>
     </div>
-    
   );
 };
