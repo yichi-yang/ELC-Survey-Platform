@@ -856,7 +856,7 @@ export default function CreateSurvey() {
                       )}
                       {/* show each created option as input box for possible edits */}
                       <input type="text" value={q}
-                        style={{marginLeft:'0.5vw', paddingLeft:'0.5vw',border: 'none', width:`${q.length+3}ch`, maxWidth:'90%'}} 
+                        style={{marginLeft:'0.5vw', paddingLeft:'0.5vw',border: 'none', width:`${(q.length+1)*8}px`, maxWidth:'90%'}} 
                         onChange={e=>editOption(e,i)}></input>
                       {/* option delete button */}
                       <IconButton style={{color:'#990000'}} onClick={e=>deleteOption(i)}><BackspaceIcon style={{fontSize:'65%'}}/></IconButton>

@@ -10,6 +10,8 @@ export default function RankQuestion(props) {
   for (let i = props.min; i <= props.max; i += props.step) {
     choices.push(i);
   }
+  let maxWidth = 0;
+  props.items.map((item)=>maxWidth=Math.max(maxWidth,item.length));
 
   return (
     <div>
@@ -19,7 +21,7 @@ export default function RankQuestion(props) {
             style={{ display: 'flex', fontSize: '0.8em', alignItems: 'center' }}
             key={item}
           >
-            <div style={{ fontWeight: 'bold', width: '6em' }}>{item}</div>
+            <div style={{ fontWeight: 'bold', width: `${maxWidth+1}ch` }}>{item}</div>
             <FormControl style={{ marginLeft: '2%' }}>
               <RadioGroup row name={item.id}>
                 {choices.map((i) => {
