@@ -1,5 +1,9 @@
 # Django REST framework 
 
+Here's an introduction to Django Rest framework. 
+
+This guide was written using the official [docs](https://www.django-rest-framework.org/).
+
 ## Model
 
 A model is a Python class that stores data.
@@ -56,7 +60,11 @@ ViewSets are used to handle requests.
 
 Instead of method handlers such as ```.get()``` or ```.post()```, viewsets provides actions such as ```.list()``` and ```.create()```
 
+
+There are many ways to create a viewset, but there we use ```ModelViewSet``` to minimize the code and simplify the logic of a viewset. 
+
 We use ```ModelViewSet``` class that provide the actions ```.list()```, ```.retrieve()```, ```.create()```, ```.update()```, ```.partial_update()```, and ```.destroy()```
+
 
 ### Example
 
@@ -72,6 +80,36 @@ Here we specify the serializer and who has permission to access this viewset. Al
 Viewsets can be found in ```backend\survey\views.py```
 
 Read more about Viewsets [here](https://www.django-rest-framework.org/api-guide/viewsets/)
+
+## Permissions
+Like we specified above, ```permissions``` tells django who has access to an endpoint.  
+
+### Example
+
+```python
+permission_classes = [IsAuthenticatedOrReadOnly]
+```
+
+This means that ```authenticated``` users are allowed to perform any request. ```Unauthenticated``` users will only be permitted if the request method is ```GET```, ```HEAD``` or ```OPTIONS```.
+
+Django provides a lot of permission classes that you can find [here](https://www.django-rest-framework.org/api-guide/permissions/).
+
+You can also create your own custom permissions.
+
+### Example
+
+```python
+class IsAuthenticatedOrCreateOnly(BasePermission):
+    def has_permission(self, request, view):
+        return bool(
+            request.method in ['POST', 'OPTIONS'] or
+            request.user and
+            request.user.is_authenticated
+        )
+```
+This permission class allows unauthenticated users to access ```POST``` and ```OPTIONS``` requests while authenticated users can access all requests.
+
+Our custom permissions are in ```backend\survey\permissions.py```.
 
 ## Routing
 
@@ -96,7 +134,7 @@ urlpatterns = [
 ```
 This specifys that we want to include the survey router url.
 
-Routers can be found in ```backend\survey\urls.py```
+Our survey API routers can be found in ```backend\survey\urls.py```
 
 Additionally, the parent URL prefix for our endpoint is ```\api``` which we specify in ```backend\elcform\urls.py```
 
