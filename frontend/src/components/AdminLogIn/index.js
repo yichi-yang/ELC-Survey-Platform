@@ -59,6 +59,12 @@ export default function AdminLogIn() {
     setUsername(e.target.value);
   }
 
+  function handleEnter(e) {
+    if(e.key === 'Enter') {
+      logIn()
+    }
+  }
+
   return (
     <div
       style={{
@@ -84,6 +90,7 @@ export default function AdminLogIn() {
         style={textfield}
         value={username}
         onChange={changeUsername}
+        onKeyDown={handleEnter}
       />
       <TextField
         id="password"
@@ -93,6 +100,7 @@ export default function AdminLogIn() {
         style={textfield}
         value={password}
         onChange={changePassword}
+        onKeyDown={handleEnter}
       />
 
       <div style={{color:'#FFC72C', fontSize:'100%'}} hidden={!errorMessage} >Incorrect Password or Username, Please Try Again</div>
