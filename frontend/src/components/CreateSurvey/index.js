@@ -792,7 +792,7 @@ export default function CreateSurvey() {
                 justifyContent: 'space-between',
               }}
             >
-            <div style={{ width: '75%', display:'flex', flexWrap:'nowrap', alignItems:'flex-end', margin:'0.5vw'}}>
+            <div style={{ width: '70%', display:'flex', flexWrap:'nowrap', alignItems:'flex-end', margin:'0.5vw'}}>
               <div><strong>Question:</strong></div>
               {/* Question content */}
               <input
@@ -856,7 +856,7 @@ export default function CreateSurvey() {
                       )}
                       {/* show each created option as input box for possible edits */}
                       <input type="text" value={q}
-                        style={{marginLeft:'0.5vw', paddingLeft:'0.5vw',border: 'none', width:`${q.length}ch`, maxWidth:'90%'}} 
+                        style={{marginLeft:'0.5vw', paddingLeft:'0.5vw',border: 'none', width:`${(q.length+1)*8}px`, maxWidth:'90%'}} 
                         onChange={e=>editOption(e,i)}></input>
                       {/* option delete button */}
                       <IconButton style={{color:'#990000'}} onClick={e=>deleteOption(i)}><BackspaceIcon style={{fontSize:'65%'}}/></IconButton>
