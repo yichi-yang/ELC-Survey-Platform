@@ -43,13 +43,21 @@ export default function StudentLogIn(){
     })
   }
 
+  function handleEnter(e){
+    if(e.key === 'Enter'){
+      enterSurvey()
+    }
+  }
+
   return(
     <div style={{backgroundColor:'#990000', minHeight: '100vh', display: 'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', width:'100%'}}>
       <div> 
          <strong style={{color:'#FFC72C', fontSize: '5vw'}}>ELC Survey Platform</strong>
       </div>
 
-      <TextField id="surveyNumber" label="Survey Number" variant="filled" value={code} onChange={e=>{setCode(e.target.value); setErrorMessage(false)}} style={textfield}/>
+      <TextField id="surveyNumber" label="Survey Number" variant="filled" value={code} 
+        onChange={e=>{setCode(e.target.value); setErrorMessage(false)}} style={textfield} onKeyDown={handleEnter}/>
+
       <div style={{color:'#FFC72C', fontSize:'80%', marginTop:'-4vw'}} hidden={!errorMessage} >Survey Not Found, Please Try Again</div>
       
       <Button variant='contained'
