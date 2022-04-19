@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ResponsiveAppBar } from '../AdminTemplate';
 import { useParams } from "react-router-dom";
+import CircularProgress from '@mui/material/CircularProgress';
 import axios from "axios";
 
 const contentFormat = {
@@ -41,27 +42,42 @@ const numberStyle = {
 }
 
 function FormReleased() {
-    const {id} = useParams();
-    const [code, setCode] = useState(undefined);
+    const { surveyID } = useParams();
+    const [code, setCode] = useState(null);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
+        axios.get(`/api/sessions/?survey=${surveyID}`)
+            .then(response => {
+                // remove any existing sessions
+                if (response.data.results.length > 0) {
+                    return axios.delete(`/api/sessions/${response.data.results[0].id}/`);
+                } else {
+                    return; // resolved promise
+                }
+            })
+            .then(() => axios.post('/api/sessions/', { "survey": surveyID }))
+            .then(response => {
+                setCode(response.data.code);
+            })
+            .catch(error => {
+                setError(String(error));
+            });
+    }, []);
 
-        axios.post('/api/sessions/',{"survey":id}).then(res=>{
-            if(res.status===201){setCode(res.data.code)}})
-
-    });
-
-        
     return (
         <div style={contentFormat}>
             <ResponsiveAppBar />
             <div style={titleFormat}><strong>Form Released</strong></div>
             <div style={background}>
-                <div style={subtitle}><strong>The Code for Form is</strong></div>
-                <div style={numberStyle}>
+                <div style={subtitle}>
                     <strong>
-                        {code}
+                        {error === null ? 'The Code for Form is' : error}
                     </strong>
+                </div>
+                <div style={numberStyle}>
+                    {code !== null && <strong>{code}</strong>}
+                    {(code ?? error) === null && <CircularProgress />}
                 </div>
             </div>
         </div>
