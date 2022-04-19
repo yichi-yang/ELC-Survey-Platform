@@ -28,7 +28,7 @@ export default function RankQuestion(props) {
                   return (
                     <FormControlLabel
                       value={i}
-                      control={<Radio size="1.5%" />}
+                      control={<Radio size="small" />}
                       label={i}
                       disabled={true}
                       key={`${item}_${i} `}

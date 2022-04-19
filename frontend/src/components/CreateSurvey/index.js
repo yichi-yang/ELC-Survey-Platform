@@ -12,20 +12,31 @@ import CircleIcon from '@mui/icons-material/Circle';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import SquareIcon from '@mui/icons-material/Square';
 import Switch from '@mui/material/Switch';
-import { useNavigate, useParams } from 'react-router-dom';
+import CircularProgress from '@mui/material/CircularProgress';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Alert from './Alert';
 import RankQuestion from './Ranking';
 import BackspaceIcon from '@mui/icons-material/Backspace';
 import AddBoxIcon from '@mui/icons-material/AddBox';
 
+function useQuery() {
+  const { search } = useLocation();
+
+  return React.useMemo(() => new URLSearchParams(search), [search]);
+}
+
 // Survey edits are stored to database syncrously. When refreshed, created questions and edits should remain
 export default function CreateSurvey() {
 
   const navigate = useNavigate();
-  //use the url to determine if it is a survey that needs update
+
+  //use the url to determine if which survey to update
   const { updateID } = useParams();
-   
+
+  // check if we needs to make a copy of updateID
+  const duplicate = useQuery().get('duplicate');
+
   // Beginning of css styling
   const headingStyle = {
     height: '15vh',
@@ -105,7 +116,7 @@ export default function CreateSurvey() {
     fontWeight: 'bold',
     textAlign: 'center',
   };
-  
+
   const iconButtonStyle = {
     margin: '0 0.5vw',
   };
@@ -122,21 +133,19 @@ export default function CreateSurvey() {
     }
   }
 
-  const [surveyID, setSurveyID] = useState(localStorage.getItem('surveyID'));
+  const [surveyID, setSurveyID] = useState(null);
 
-  const [title, setTitle] = useState(''); // survey title
+  const [title, setTitle] = useState(null); // survey title
 
-  const [description, setDescription] = useState(''); //survey description
+  const [description, setDescription] = useState(null); //survey description
 
-  const [questions, setQuestions] = useState([]); //survey's created questions
+  const [questions, setQuestions] = useState(null); //survey's created questions
 
   const [newQuestion, setNewQuestion] = useState(true); //whether to show the question create box
 
   const [groupNum, setGroupNum] = useState(1); //divide survey by group # 
 
   const [groupName, setGroupName] = useState('Group'); //what groups are called
-
-  const [grouped, setGrouped] = useState(false); //if survey is divided by groups
 
   const [groupID, setGroupID] = useState(null); //determine if survey is grouped
 
@@ -176,29 +185,24 @@ export default function CreateSurvey() {
   }
 
   function deleteSurvey() {
-    axios.delete(`/api/surveys/${surveyID}/`).then(() => {
-      localStorage.removeItem('surveyID');
+    if (updateID === 'new' || duplicate === 'true') {
+      axios.delete(`/api/surveys/${surveyID}/`).then(() => {
+        navigate('/template');
+      });
+    } else {
       navigate('/template');
-    });
+    }
   }
 
-  //set survey to complete by changing the draft status and localstorage of the survey's ID
+  //set survey to complete by changing the draft status
   function createComplete() {
-    axios.patch(`/api/surveys/${surveyID}/`,{"draft": false}).then(res=>{
-      if(res.status===200){
-        if(updateID!=='new'){
-          axios.delete(`/api/surveys/${updateID}/`).then(()=>{
-            localStorage.removeItem('surveyID');
-            navigate('/template');
-          })}else{
-            localStorage.removeItem('surveyID');
-            navigate('/template');
-          }
-      }else{
-        window.location.reload();
-      }
-    }
-    )
+    axios.patch(`/api/surveys/${surveyID}/`, { "draft": false })
+      .then(() => {
+        if (updateID !== 'new' && duplicate === 'true') {
+          return axios.delete(`/api/surveys/${updateID}/`);
+        }
+      })
+      .then(() => { navigate('/template'); });
   }
 
   //converter for groupedQuestion API call
@@ -219,7 +223,7 @@ export default function CreateSurvey() {
 
   //change groupQuestion status (Create OR Delete)
   function patchGroupQuestion() {
-    if (!grouped) {
+    if (groupID === null) {
       let groups = groupChoices(letterGroup, groupName, groupNum);
       axios
         .post(`/api/surveys/${surveyID}/questions/`, {
@@ -230,31 +234,29 @@ export default function CreateSurvey() {
           choices: groups,
         })
         .then((res) => {
-          if (res.status === 201) {
-            setGroupID(res.data.id);
-            //update the new group_by_question ID to survey's entity
-            axios.patch(`/api/surveys/${surveyID}/`,{"group_by_question":res.data.id});
-          }else{
-            window.location.reload();
-          }
+          setGroupID(res.data.id);
+          //update the new group_by_question ID to survey's entity
+          return axios
+            .patch(`/api/surveys/${surveyID}/`, { "group_by_question": res.data.id });
         });
     } else {
-      axios.delete(`/api/surveys/${surveyID}/questions/${groupID}/`);
-      axios.patch(`/api/surveys/${surveyID}/`,{"group_by_question":null})
+      axios
+        .delete(`/api/surveys/${surveyID}/questions/${groupID}/`)
+        .then(() => {
+          setGroupID(null);
+        });
     }
-    setGrouped(!grouped);
   }
 
   //API call to change group name/number/alphabet_or_not
   function patchGroupChoices(letter, name, num) {
-    if (grouped) {
+    if (groupID !== null) {
       let choices = groupChoices(letter, name, num);
       axios
         .patch(`/api/surveys/${surveyID}/questions/${groupID}/`, {
           choices: choices,
           title: `Which ${name} are you in?`,
-        })
-        .then((res) => {});
+        });
     }
   }
 
@@ -263,20 +265,24 @@ export default function CreateSurvey() {
     //if value is empty, then reset to groupnum==1 and disable the groupQuestion
     if (e.target.value === '') {
       setGroupNum(1);
-      setGrouped(false);
-      axios.delete(`/api/surveys/${surveyID}/questions/${groupID}/`);
+      axios.delete(`/api/surveys/${surveyID}/questions/${groupID}/`)
+        .then(() => {
+          setGroupID(null);
+        });
     } else {
       try {
         let num = e.target.value;
         if (num > 1) {
-          if (grouped && num > 1)
+          if (groupID === null && num > 1)
             patchGroupChoices(letterGroup, groupName, num);
         } else {
-          setGrouped(false);
           setGroupNum(1);
-          axios.delete(`/api/surveys/${surveyID}/questions/${groupID}/`);
+          axios.delete(`/api/surveys/${surveyID}/questions/${groupID}/`)
+            .then(() => {
+              setGroupID(null);
+            });
         }
-      } catch {}
+      } catch { }
     }
   }
 
@@ -319,14 +325,14 @@ export default function CreateSurvey() {
           questions.splice(deleteQuestionIndex, 1);
           setUpdate(!shouldRender);
           setDeleteQuestionIndex(-1); //reset to -1 for index to close alert box
-        }else {
+        } else {
           window.location.reload();
         }
       });
   }
 
   // set question's states for editing question in the box
-  function editOnclick(i){
+  function editOnclick(i) {
     let item = questions[i];
     setEditQuestion(i);
     setOptions([...questions[i].options]); //deep copy
@@ -338,11 +344,11 @@ export default function CreateSurvey() {
     setRankStep(item.range_step);
     setOption('');
     setNewQuestion(true); //open the question edit box 
-  } 
+  }
 
   // update the question to the database after edits
-  function updateQuestion(duplicate=false, requestBody){
-    axios.put(`/api/surveys/${surveyID}/questions/${questions[editQuestion].id}/`, requestBody).then(res=>{
+  function updateQuestion(duplicate = false, requestBody) {
+    axios.put(`/api/surveys/${surveyID}/questions/${questions[editQuestion].id}/`, requestBody).then(res => {
       if (res.status === 200) {
         let newItem = {
           options: options,
@@ -356,42 +362,42 @@ export default function CreateSurvey() {
         };
 
         let tmp = [...questions];
-        tmp[editQuestion]=newItem;
+        tmp[editQuestion] = newItem;
         setQuestions(tmp); //update to question list
         setEditQuestion(undefined); //change the edit status back to undefined
-       
-        if (!duplicate) { 
+
+        if (!duplicate) {
           reset(); //if duplicate is not clicked, then just reset the question's statuses
           setNewQuestion(false);
-        }else{ // otherwise, post a new question
-          appendQuestion(false,requestBody);
+        } else { // otherwise, post a new question
+          appendQuestion(false, requestBody);
         }
 
       } else {
         window.location.reload();
       }
-  });
+    });
   }
 
   // append newly created option item to list
-  function addOption(){
+  function addOption() {
     setOptions(options.concat(option));
     setOption('');
   }
 
 
   //edit created Option's content (Onchange)
-  function editOption(e,i){
-    options[i]=e.target.value;
+  function editOption(e, i) {
+    options[i] = e.target.value;
     // force rerender once updated
-    setForceOptionsUpdate(forceOptionsUpdate+1);
+    setForceOptionsUpdate(forceOptionsUpdate + 1);
   }
 
   //delete a created option
-  function deleteOption(i){
-    options.splice(i,1);
+  function deleteOption(i) {
+    options.splice(i, 1);
     // force rerender once updated
-    setForceOptionsUpdate(forceOptionsUpdate+1);
+    setForceOptionsUpdate(forceOptionsUpdate + 1);
   }
 
   function finishQuestion(duplicate = false) {
@@ -438,20 +444,20 @@ export default function CreateSurvey() {
         range_default: rd,
       };
     }
-    
+
     console.log(editQuestion);
     //If it is updating a question
-    if(editQuestion!==undefined){
-      updateQuestion(duplicate,requestContent);
+    if (editQuestion !== undefined) {
+      updateQuestion(duplicate, requestContent);
     }
     // otherwise, create a new question
-    else{
+    else {
       appendQuestion(duplicate, requestContent);
     }
   }
 
-   //apped to question list when a new question is created
-  function appendQuestion(duplicate = false, requestBody){
+  //apped to question list when a new question is created
+  function appendQuestion(duplicate = false, requestBody) {
     console.log(requestBody);
     axios
       .post(`/api/surveys/${surveyID}/questions/`, requestBody)
@@ -484,7 +490,7 @@ export default function CreateSurvey() {
       <div>
         {options.map((q, i) => {
           return (
-            <div style={{ margin: '1px 5px', display:"flex", alignItems:'center' }} key={i}>
+            <div style={{ margin: '1px 5px', display: "flex", alignItems: 'center' }} key={i}>
               {questionType ? (
                 <CropSquareIcon fontSize="1%" />
               ) : (
@@ -502,9 +508,9 @@ export default function CreateSurvey() {
   function listQuestions() {
     return (
       <div>
-         <Alert
+        <Alert
           id="deleteAlert"
-          open={deleteQuestionIndex>-1}
+          open={deleteQuestionIndex > -1}
           message="Are you sure you want to delete this question?"
           content="Once confirmed, it will be discarded"
           choiceOne="No"
@@ -515,21 +521,21 @@ export default function CreateSurvey() {
         />
         {questions.map((q, i) => {
           return (
-            <div style={{ margin: '2% 6%', width:'90vw' }} key={i}>
+            <div style={{ margin: '2% 6%', width: '90vw' }} key={i}>
               <strong>{i + 1 + '. ' + q.question}</strong>
               {/* if required */}
-              {q.required ? '(*)' : ''}  
+              {q.required ? '(*)' : ''}
               <Button
                 id={i}
                 onClick={(e) => {
-                 setDeleteQuestionIndex(i);
+                  setDeleteQuestionIndex(i);
                 }}
                 size='small'
-                style={{ color: 'grey',marginLeft:'1.5%' }}
+                style={{ color: 'grey', marginLeft: '1.5%' }}
               >
                 Delete
               </Button>
-              <Button onClick={e=>editOnclick(i)} size='small' style={{color:'#990000'}}>
+              <Button onClick={e => editOnclick(i)} size='small' style={{ color: '#990000' }}>
                 Edit
               </Button>
               {/* for multiple choice and selections */}
@@ -591,78 +597,438 @@ export default function CreateSurvey() {
 
   // initial works for setting up the survey-create page.
   useEffect(() => {
-    //if this is not refresh (no id in localstorage)
-    if (surveyID === null || surveyID === 'null') {
-      setTitle('Untitled Survey');
-      axios
-        .post('/api/surveys/', {
+
+    const getSurvey = () => {
+      if (updateID === 'new') {
+        // create new survey
+        return axios.post('/api/surveys/', {
           title: 'Untitled Survey',
-          description: description,
-        })
-        .then((response) => {
-          if (response.status !== 201) {
-            navigate('/admin');
-          }
-          setSurveyID(response.data.id);
-          localStorage.setItem('surveyID', response.data.id);
-        })
-        .catch(() => {
-          window.location.reload();
+          description: '',
         });
-    } 
-    //if it is existing survey
-    else { 
-      axios.get(`/api/surveys/${surveyID}/`) //get survey
-        .then((res) => {
-          if (res.status === 200) {
-            setTitle(res.data.title);
-            setDescription(res.data.description);
-            setGroupID(res.data.group_by_question);
-          }
-        })
-        .catch(() => {
-          localStorage.removeItem('surveyID');
-          window.location.reload();
-        });
-      //get survey questions
-      axios.get(`/api/surveys/${surveyID}/questions/`).then((res) => {
-        if (res.status === 200) {
-          let existingQuestions = [];
-          let choices = [];
-          res.data.forEach((q) => {
-            // if this question is a group_by_question, set the states correspondingly
-            if (q.type === 'DP') {
-              setGrouped(true);
-              setGroupID(q.id);
-              setGroupNum(q.choices.length);
-              let tmp = q.choices[0].description;
-              let cut = q.choices.length.toString.length + 1;
-              if (tmp[tmp.length - 1] === 'A') {
-                setLetterGroup(true);
-                cut = 2;
-              }
-              setGroupName(tmp.substr(0, tmp.length - cut));
-            } else {
-              choices = [];
-              if (q.choices)
-                q.choices.forEach((c) => choices.push(c.description));
-              existingQuestions.push({
-                options: choices,
-                question: q.title,
-                type: typeConverter(q.type),
-                required: q.required,
-                id: q.id,
-                range_max: q.range_max,
-                range_min: q.range_min,
-                range_step: q.range_step,
-              });
-            }
-          });
-          setQuestions(existingQuestions); //update the questions state
-        }
-      });
+      } else if (duplicate === 'true') {
+        // duplicate existing survey
+        return axios.post(`/api/surveys/${updateID}/duplicate/`);
+      } else {
+        // update existing survey
+        return axios.get(`/api/surveys/${updateID}/`);
+      }
     }
+
+    getSurvey()
+      .then(response => {
+        const survey = response.data;
+
+        setSurveyID(survey.id);
+        setTitle(survey.title);
+        setDescription(survey.description);
+        setGroupID(survey.group_by_question);
+
+        // get survey questions
+        return axios.get(`/api/surveys/${survey.id}/questions/`)
+          .then(response => {
+            const questions = [];
+            for (const q of response.data) {
+              // if this question is a group_by_question, set the states accordingly
+              if (q.id === survey.group_by_question) {
+                setGroupNum(q.choices.length);
+                let tmp = q.choices[0].description;
+                let cut = q.choices.length.toString.length + 1;
+                if (tmp[tmp.length - 1] === 'A') {
+                  setLetterGroup(true);
+                  cut = 2;
+                }
+                setGroupName(tmp.substr(0, tmp.length - cut));
+              } else {
+                console.log(q);
+                questions.push({
+                  options: (q.choices ?? []).map(x => x.description),
+                  question: q.title,
+                  type: typeConverter(q.type),
+                  required: q.required,
+                  id: q.id,
+                  range_max: q.range_max,
+                  range_min: q.range_min,
+                  range_step: q.range_step,
+                });
+              }
+            }
+            setQuestions(questions); //update the questions state
+          })
+      })
   }, []);
+
+  function getBody() {
+    return (
+      <>
+        {/* Create and Cancel buttons for survey */}
+        <div style={headingButtons}>
+          <Button
+            id="SurveyCreateCancel"
+            style={{ color: '#FFC72C' }}
+            onClick={(e) => {
+              setCancelAlertOpen(true);
+            }}
+            size='medium'
+          >
+            Cancel
+          </Button>
+          <Alert
+            id="cancelAlert"
+            open={cancelAlertOpen}
+            message="Are You Sure You Want To Cancel?"
+            content="This Survey Will Be Discarded If Confirmed"
+            choiceOne="No"
+            choiceTwo="Yes"
+            handleOne={alertCancel}
+            close={alertCancel}
+            handleTwo={deleteSurvey}
+          />
+          <Button
+            id="SurveyCreate"
+            disabled={questions.length === 0}
+            style={questions.length ? { color: 'white', fontWeight: 'bold' } : {}}
+            onClick={() => setCreateAlertOpen(true)}
+            size='medium'
+          >
+            Create
+          </Button>
+          <Alert
+            id="createAlert"
+            open={createAlertOpen}
+            message="Have You Finished Editing The Survey?"
+            content="This Survey Will Be Created If Confirmed"
+            choiceOne="No"
+            choiceTwo="Yes"
+            handleOne={alertCancel}
+            close={alertCancel}
+            handleTwo={createComplete}
+          />
+        </div>
+
+        {/* Beginning of the edit area */}
+        <div style={editGround}>
+          {/* title input */}
+          <input
+            type="text"
+            defaultValue={title}
+            style={{
+              width: '60%',
+              textAlign: 'center',
+              border: 'none',
+              fontSize: '1.2em',
+              color: 'grey',
+            }}
+            onBlur={(e) => updateTitle(e)}
+          />
+          {/* description input */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-evenly',
+              alignItems: 'center',
+              width: '95%',
+              marginLeft: '3%',
+            }}
+          >
+            <h4 style={{ color: '#990000' }}>Description</h4>
+            <textarea
+              defaultValue={description}
+              onBlur={updateDescription}
+              style={{
+                border: '1px solid grey',
+                minHeight: '30px',
+                width: '40vw',
+                margin: '2vw',
+              }}
+            />
+          </div>
+
+          {/* list created questions */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-start',
+              width: '100%',
+            }}
+          >
+            {shouldRender && listQuestions()}
+            {!shouldRender && listQuestions()}
+          </div>
+
+          {/* Create Question */}
+          {newQuestion ? (
+            <div
+              style={{
+                border: '1px solid #C4C4C4',
+                width: '85%',
+                padding: '1vw',
+                marginTop: '2vw',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div style={{ width: '70%', display: 'flex', flexWrap: 'nowrap', alignItems: 'flex-end', margin: '0.5vw' }}>
+                  <div><strong>Question:</strong></div>
+                  {/* Question content */}
+                  <input
+                    name='question'
+                    type="text"
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    style={{
+                      minHeight: '20px',
+                      width: '70%',
+                      marginLeft: '0.5vw',
+                      border: 'none',
+                      borderBottom: 'solid 1px #C4C4C4',
+                      fontWeight: 'bold',
+                      textAlign: 'center',
+                    }}
+                  />
+                </div>
+                {/* Droptdown box for question types */}
+                <FormControl sx={{ m: 1, minWidth: 50 }}>
+                  <Select
+                    value={questionType}
+                    onChange={typeChange}
+                    inputProps={{ 'aria-label': 'Without label' }}
+                    style={{ height: '3vw' }}
+                  >
+                    <MenuItem value={0}>Multiple Choice</MenuItem>
+                    <MenuItem value={1}>Selection</MenuItem>
+                    <MenuItem value={2}>Short Answer</MenuItem>
+                    <MenuItem value={3}>Ranking</MenuItem>
+                    {/* <MenuItem value={3}>Grid</MenuItem> */}
+                  </Select>
+                </FormControl>
+              </div>
+
+              {/* Non-Short-Answer types */}
+              {questionType === 0 || questionType === 1 || questionType === 3 ? (
+                <div>
+                  {/* Ranking */}
+                  {questionType === 3 ? (
+                    <div
+                      style={{ display: 'flex', width: '85%', fontSize: '1.2vw' }}
+                    >
+                      {rankValues(rankMin, 'Minimum', setRankMin, rankMax, '')}
+                      {rankValues(rankMax, 'Maximum', setRankMax, '', rankMin)}
+                      {/* {rankValues(rankStep, 'Step', setRankStep, '', 1)}  */}
+                      {/* This section is commented out per request. */}
+                    </div>
+                  ) : (
+                    <div></div>
+                  )}
+                  {/* list created options */}
+                  {options.map((q, i) => {
+                    return (
+                      <div style={{ margin: '1px 5px', fontSize: '1.2vw', display: "flex", width: '95%', alignItems: 'center', borderBottom: '0.5px solid #C4C4C4' }} key={i}>
+                        {/*display different icon by question types  */}
+                        {questionType === 1 ? (
+                          <CropSquareIcon fontSize="1%" />
+                        ) : (
+                          <CircleOutlinedIcon fontSize="1%" />
+                        )}
+                        {/* show each created option as input box for possible edits */}
+                        <input type="text" value={q}
+                          style={{ marginLeft: '0.5vw', paddingLeft: '0.5vw', border: 'none', width: `${(q.length + 1) * 8}px`, maxWidth: '90%' }}
+                          onChange={e => editOption(e, i)}></input>
+                        {/* option delete button */}
+                        <IconButton style={{ color: '#990000' }} onClick={e => deleteOption(i)}><BackspaceIcon style={{ fontSize: '65%' }} /></IconButton>
+                      </div>
+                    );
+                  })}
+
+                  {/* New Option Entering Field */}
+                  <div
+                    style={{
+                      margin: '5px',
+                      content: 'flex',
+                      alignItems: 'center',
+                      width: '95%'
+                    }}
+                  >
+                    {questionType === 1 ? (
+                      <SquareIcon fontSize="1%" />
+                    ) : (
+                      <CircleIcon fontSize="1%" />
+                    )}
+                    <input
+                      type="text"
+                      value={option}
+                      placeholder="Add Option/Item Here"
+                      onChange={(e) => setOption(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && option !== '') {
+                          addOption();
+                        }
+                      }}
+                      style={{
+                        width: '50%',
+                        border: 'none',
+                        borderBottom: 'solid 1px #C4C4C4',
+                        fontWeight: 'bold',
+                        margin: '0.5vw 0 0 0.5vw',
+                        paddingLeft: '0.5vw',
+                      }}
+                    />
+                    <IconButton style={option === '' ? { color: 'grey' } : { color: '#1976d2' }} onClick={addOption} disabled={option === ''}><AddBoxIcon style={{ fontSize: '65%' }} /></IconButton>
+                  </div>
+                </div>
+              ) : (
+                <div></div>
+              )} {/* End of Non-Short-Answer types */}
+
+              {/* For short Answer */}
+              {questionType === 2 ? (
+                <div
+                  style={{
+                    borderBottom: 'solid 1px #C4C4C4',
+                    width: '50%',
+                    margin: '2vw',
+                    fontSize: '1vw',
+                  }}
+                >
+                  Short answer text
+                </div>
+              ) : (
+                <div></div>
+              )}
+
+              {/* Icon buttons */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  marginTop: '1.5vw',
+                }}
+              >
+                <IconButton
+                  style={iconButtonStyle}
+                  disabled={question.length === 0 || (options.length === 0 && questionType !== 2)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    finishQuestion();
+                  }}
+                >
+                  <DoneOutlineIcon />
+                </IconButton>
+
+                {/* Append the question to questions list, and keep the question-create-box with the same states of the contents */}
+                <IconButton
+                  style={iconButtonStyle}
+                  disabled={question.length === 0 || (options.length === 0 && questionType !== 2)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    finishQuestion(true);
+                  }}
+                >
+                  <ContentCopyIcon />
+                </IconButton>
+
+                {/* reset states of the question contents if delete, close the box  */}
+                <IconButton
+                  style={iconButtonStyle}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    reset();
+                    setNewQuestion(false);
+                  }}
+                >
+                  <DeleteOutlineIcon />
+                </IconButton>
+
+                {/* Toggle for whether the question is required */}
+                <div
+                  style={{ borderLeft: '1px solid #C4C4C4', paddingLeft: '1vw' }}
+                >
+                  Required
+                  <Switch
+                    checked={required}
+                    onChange={() => {
+                      setRequired(!required);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div></div>
+          )}
+          {/* END of Create Question */}
+
+          {/* Group_by question */}
+          <div
+            style={{
+              margin: '3vw 1vw 0vw 3vw',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'left',
+              alignItems: 'center',
+            }}
+          >
+            <strong style={{ color: '#990000' }}>Divide By</strong>
+            {/* number input for number of groups */}
+            <input
+              id="SurveyGroupedNumber"
+              type="number"
+              min="1"
+              max="30"
+              value={groupNum}
+              onChange={(e) => setGroupNum(e.target.value)}
+              onBlur={(e) => updateGroupQuestionNum(e)}
+              style={groupInput}
+            />
+            {/* How is the group calls (group, team, section, ect) */}
+            <input
+              type="text"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              onBlur={(e) => {
+                patchGroupChoices(letterGroup, e.target.value, groupNum);
+              }}
+              style={groupInput}
+            />
+            {/* On or Off for this group_by question */}
+            <Switch
+              checked={groupID !== null}
+              onChange={(e) => patchGroupQuestion()}
+            />
+
+            {/* Whether this question's group enumeration should be in number or alphabet order */}
+            <strong style={{ color: '#C4C4C4' }}> in alphabet</strong>
+            <Switch
+              checked={letterGroup}
+              onChange={(e) => {
+                patchGroupChoices(!letterGroup, groupName, groupNum);
+                setLetterGroup(!letterGroup);
+              }}
+              disabled={groupID === null}
+            />
+          </div>
+          {/* End of group_by question */}
+
+          {/* Opens the 'Create Quesion' box */}
+          <Button
+            id="addQuestion"
+            style={addQuestion}
+            onClick={() => {
+              if (newQuestion == false) setNewQuestion(true);
+            }}
+          >
+            <strong>Add Question</strong>
+          </Button>
+
+        </div>
+      </>
+    );
+  }
 
   // Beginning of the HTMLs
   return (
@@ -679,373 +1045,7 @@ export default function CreateSurvey() {
       <div style={headingStyle}>
         <strong>Survey Template Creation</strong>
       </div>
-      {/* Create and Cancel buttons for survey */}
-      <div style={headingButtons}>
-        <Button
-          id="SurveyCreateCancel"
-          style={{ color: '#FFC72C' }}
-          onClick={(e) => {
-            setCancelAlertOpen(true);
-          }}
-          size='medium'
-        >
-          Cancel
-        </Button>
-        <Alert
-          id="cancelAlert"
-          open={cancelAlertOpen}
-          message="Are You Sure You Want To Cancel?"
-          content="This Survey Will Be Discarded If Confirmed"
-          choiceOne="No"
-          choiceTwo="Yes"
-          handleOne={alertCancel}
-          close={alertCancel}
-          handleTwo={deleteSurvey}
-        />
-        <Button
-          id="SurveyCreate"
-          disabled={questions.length === 0}
-          style={questions.length ? { color: 'white', fontWeight: 'bold' } : {}}
-          onClick={() => setCreateAlertOpen(true)}
-          size='medium'
-        >
-          Create
-        </Button>
-        <Alert
-          id="createAlert"
-          open={createAlertOpen}
-          message="Have You Finished Editing The Survey?"
-          content="This Survey Will Be Created If Confirmed"
-          choiceOne="No"
-          choiceTwo="Yes"
-          handleOne={alertCancel}
-          close={alertCancel}
-          handleTwo={createComplete}
-        />
-      </div>
-
-{/* Beginning of the edit area */}
-      <div style={editGround}>
-        {/* title input */}
-        <input
-          type="text"
-          defaultValue={title}
-          style={{
-            width: '60%',
-            textAlign: 'center',
-            border: 'none',
-            fontSize: '1.2em',
-            color: 'grey',
-          }}
-          onBlur={(e) => updateTitle(e)}
-        />
-{/* description input */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-evenly',
-            alignItems: 'center',
-            width: '95%',
-            marginLeft: '3%',
-          }}
-        >
-          <h4 style={{ color: '#990000' }}>Description</h4>
-          <textarea
-            defaultValue={description}
-            onBlur={updateDescription}
-            style={{
-              border: '1px solid grey',
-              minHeight: '30px',
-              width: '40vw',
-              margin: '2vw',
-            }}
-          />
-        </div>
-
-        {/* list created questions */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-start',
-            width: '100%',
-          }}
-        >
-          {shouldRender && listQuestions()}
-          {!shouldRender && listQuestions()}
-        </div>
-        
-        {/* Create Question */}
-        {newQuestion ? (
-          <div
-            style={{
-              border: '1px solid #C4C4C4',
-              width: '85%',
-              padding: '1vw',
-              marginTop: '2vw',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-            <div style={{ width: '70%', display:'flex', flexWrap:'nowrap', alignItems:'flex-end', margin:'0.5vw'}}>
-              <div><strong>Question:</strong></div>
-              {/* Question content */}
-              <input
-                name='question'
-                type="text"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                style={{
-                  minHeight: '20px',
-                  width:'70%',
-                  marginLeft: '0.5vw',
-                  border: 'none',
-                  borderBottom: 'solid 1px #C4C4C4',
-                  fontWeight: 'bold',
-                  textAlign: 'center',
-                }}
-              />
-            </div>
-            {/* Droptdown box for question types */}
-              <FormControl sx={{ m: 1, minWidth: 50 }}>
-                <Select
-                  value={questionType}
-                  onChange={typeChange}
-                  inputProps={{ 'aria-label': 'Without label' }}
-                  style={{ height: '3vw' }}
-                >
-                  <MenuItem value={0}>Multiple Choice</MenuItem>
-                  <MenuItem value={1}>Selection</MenuItem>
-                  <MenuItem value={2}>Short Answer</MenuItem>
-                  <MenuItem value={3}>Ranking</MenuItem>
-                  {/* <MenuItem value={3}>Grid</MenuItem> */}
-                </Select>
-              </FormControl>
-            </div>
-            
-            {/* Non-Short-Answer types */}
-            {questionType === 0 || questionType === 1 || questionType === 3 ? (
-              <div>
-                {/* Ranking */}
-                {questionType === 3 ? (
-                  <div
-                    style={{ display: 'flex', width: '85%', fontSize: '1.2vw' }}
-                  >
-                    {rankValues(rankMin, 'Minimum', setRankMin, rankMax, '')}
-                    {rankValues(rankMax, 'Maximum', setRankMax, '', rankMin)}
-                    {/* {rankValues(rankStep, 'Step', setRankStep, '', 1)}  */}
-                    {/* This section is commented out per request. */}
-                  </div>
-                ) : (
-                  <div></div>
-                )}
-                {/* list created options */}
-                {options.map((q, i) => {
-                  return (
-                    <div style={{ margin: '1px 5px', fontSize: '1.2vw', display:"flex", width:'95%', alignItems:'center', borderBottom:'0.5px solid #C4C4C4' }} key={i}>
-                      {/*display different icon by question types  */}
-                      {questionType === 1 ? (
-                        <CropSquareIcon fontSize="1%" />
-                      ) : (
-                        <CircleOutlinedIcon fontSize="1%" />
-                      )}
-                      {/* show each created option as input box for possible edits */}
-                      <input type="text" value={q}
-                        style={{marginLeft:'0.5vw', paddingLeft:'0.5vw',border: 'none', width:`${(q.length+1)*8}px`, maxWidth:'90%'}} 
-                        onChange={e=>editOption(e,i)}></input>
-                      {/* option delete button */}
-                      <IconButton style={{color:'#990000'}} onClick={e=>deleteOption(i)}><BackspaceIcon style={{fontSize:'65%'}}/></IconButton>
-                    </div>
-                  );
-                })}
-
-              {/* New Option Entering Field */}
-                <div
-                  style={{
-                    margin: '5px',
-                    content: 'flex',
-                    alignItems: 'center',
-                    width:'95%'
-                  }}
-                >
-                  {questionType === 1 ? (
-                    <SquareIcon fontSize="1%" />
-                  ) : (
-                    <CircleIcon fontSize="1%" />
-                  )}
-                  <input
-                    type="text"
-                    value={option}
-                    placeholder="Add Option/Item Here"
-                    onChange={(e) => setOption(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && option !== '') {
-                        addOption();
-                      }
-                    }}
-                    style={{
-                      width: '50%',
-                      border: 'none',
-                      borderBottom: 'solid 1px #C4C4C4',
-                      fontWeight: 'bold',
-                      margin: '0.5vw 0 0 0.5vw',
-                      paddingLeft: '0.5vw',
-                    }}
-                  />
-                   <IconButton style={option===''?{color:'grey'}:{color:'#1976d2'}} onClick={addOption} disabled={option===''}><AddBoxIcon style={{fontSize:'65%'}}/></IconButton>
-                </div>
-              </div>
-            ) : (
-              <div></div>
-            )} {/* End of Non-Short-Answer types */}
-
-            {/* For short Answer */}
-            {questionType === 2 ? (
-              <div
-                style={{
-                  borderBottom: 'solid 1px #C4C4C4',
-                  width: '50%',
-                  margin: '2vw',
-                  fontSize: '1vw',
-                }}
-              >
-                Short answer text
-              </div>
-            ) : (
-              <div></div>
-            )}
-
-            {/* Icon buttons */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                marginTop: '1.5vw',
-              }}
-            >
-              <IconButton
-                style={iconButtonStyle}
-                disabled={question.length===0||(options.length === 0 && questionType !== 2)}
-                onClick={(e) => {
-                  e.preventDefault();
-                  finishQuestion();
-                }}
-              >
-                <DoneOutlineIcon />
-              </IconButton>
-
-              {/* Append the question to questions list, and keep the question-create-box with the same states of the contents */}
-              <IconButton
-                style={iconButtonStyle}
-                disabled={question.length===0||(options.length === 0 && questionType !== 2)}
-                onClick={(e) => {
-                  e.preventDefault();
-                  finishQuestion(true);
-                }}
-              >
-                <ContentCopyIcon />
-              </IconButton>
-
-              {/* reset states of the question contents if delete, close the box  */}
-              <IconButton
-                style={iconButtonStyle}
-                onClick={(e) => {
-                  e.preventDefault();
-                  reset();
-                  setNewQuestion(false);
-                }}
-              >
-                <DeleteOutlineIcon />
-              </IconButton>
-              
-              {/* Toggle for whether the question is required */}
-              <div
-                style={{ borderLeft: '1px solid #C4C4C4', paddingLeft: '1vw' }}
-              >
-                Required
-                <Switch
-                  checked={required}
-                  onChange={() => {
-                    setRequired(!required);
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div></div>
-        )}
-        {/* END of Create Question */}
-        
-        {/* Group_by question */}
-        <div
-          style={{
-            margin: '3vw 1vw 0vw 3vw',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'left',
-            alignItems: 'center',
-          }}
-        >
-          <strong style={{ color: '#990000' }}>Divide By</strong>
-          {/* number input for number of groups */}
-          <input
-            id="SurveyGroupedNumber"
-            type="number"
-            min="1"
-            max="30"
-            value={groupNum}
-            onChange={(e) => setGroupNum(e.target.value)}
-            onBlur={(e) => updateGroupQuestionNum(e)}
-            style={groupInput}
-          />
-          {/* How is the group calls (group, team, section, ect) */}
-          <input
-            type="text"
-            value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
-            onBlur={(e) => {
-              patchGroupChoices(letterGroup, e.target.value, groupNum);
-            }}
-            style={groupInput}
-          />
-          {/* On or Off for this group_by question */}
-          <Switch
-            checked={grouped}
-            onChange={(e) => patchGroupQuestion()}
-            disabled={groupNum <= 1 && !grouped}
-          />
-
-          {/* Whether this question's group enumeration should be in number or alphabet order */}
-          <strong style={{ color: '#C4C4C4' }}> in alphabet</strong>
-          <Switch
-            checked={letterGroup}
-            onChange={(e) => {
-              patchGroupChoices(!letterGroup, groupName, groupNum);
-              setLetterGroup(!letterGroup);
-            }}
-            disabled={groupNum <= 1 && !grouped}
-          />
-        </div> 
-        {/* End of group_by question */}
-
-        {/* Opens the 'Create Quesion' box */}
-        <Button
-          id="addQuestion"
-          style={addQuestion}
-          onClick={() => {
-            if (newQuestion == false) setNewQuestion(true);
-          }}
-        >
-          <strong>Add Question</strong>
-        </Button>
-        
-      </div>
+      {surveyID && questions ? getBody() : <CircularProgress size={100} style={{ marginTop: '50vh' }} />}
     </div>
   );
 }

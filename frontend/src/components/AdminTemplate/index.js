@@ -50,12 +50,12 @@ const ResponsiveAppBar = () => {
     setAnchorElUser(null);
   };
 
-  const logout = ()=>{
+  const logout = () => {
     navigate(`/`);
   }
 
   return (
-    <AppBar position="static" style={{ background: '#990000'}}>
+    <AppBar position="static" style={{ background: '#990000' }}>
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <Typography
@@ -64,7 +64,7 @@ const ResponsiveAppBar = () => {
             component="div"
             sx={{ mr: 1, display: { xs: 'none', md: 'flex' } }}
           >
-            <strong style={{color:'#FFC72C', fontSize: '1.5vw'}}>Admin</strong>
+            <strong style={{ color: '#FFC72C', fontSize: '1.5vw' }}>Admin</strong>
           </Typography>
 
           <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
@@ -109,7 +109,7 @@ const ResponsiveAppBar = () => {
             component="div"
             sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}
           >
-            <strong style={{color:'#FFC72C', fontSize: '2.5vw'}}>Admin</strong>
+            <strong style={{ color: '#FFC72C', fontSize: '2.5vw' }}>Admin</strong>
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
             {pages.map((page) => (
@@ -126,7 +126,7 @@ const ResponsiveAppBar = () => {
           <Box sx={{ flexGrow: 0 }}>
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-              <Avatar sx={{ bgcolor: '#FFC72C' }}>A</Avatar>
+                <Avatar sx={{ bgcolor: '#FFC72C' }}>A</Avatar>
               </IconButton>
             </Tooltip>
             <Menu
@@ -200,7 +200,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-const AlertDialogEmpty =(props)=> {
+const AlertDialogEmpty = (props) => {
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -211,18 +211,17 @@ const AlertDialogEmpty =(props)=> {
     setOpen(false);
   };
 
-  const handleEmpty = () =>{
-    axios.get(`/api/sessions/?survey=${props.id}`).then(r => {
-       r.data.results.map((item)=>(
-        axios.delete(`/api/sessions/${item.id}/`).then(() => {}).catch((error) => { console.log(error) })
-       ))
-       window.location.reload();
-    }).catch((error) => { console.log(error) });
+  const handleEmpty = () => {
+    axios.get(`/api/sessions/?survey=${props.id}`).then(r =>
+      Promise.all(r.data.results.map((item) => axios.delete(`/api/sessions/${item.id}/`))
+      ))
+      .then(() => { handleClose(); })
+      .catch((error) => { console.log(error) });
   };
 
   return (
     <div>
-      <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
+      <Button variant="contained" size="small" style={{ background: '#990000' }} onClick={handleClickOpen}>
         {props.name}
       </Button>
       <Dialog
@@ -250,7 +249,7 @@ const AlertDialogEmpty =(props)=> {
   );
 }
 
-const AlertDialogUpdate =(props)=> {
+const AlertDialogUpdate = (props) => {
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -262,17 +261,14 @@ const AlertDialogUpdate =(props)=> {
   };
 
   const handleUpdate = () => {
-    axios.post(`/api/surveys/${props.id}/duplicate/`).then((response) => {
-      localStorage.setItem('surveyID', response.data.id);
-      window.open(`/admin/create_survey/${props.id}`,'_blank');
-      handleClose();
-   }).catch((error) => { console.log(error) });
+    window.open(`/admin/create_survey/${props.id}?duplicate=true`, '_blank');
+    handleClose();
   };
 
 
   return (
     <div>
-      <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
+      <Button variant="contained" size="small" style={{ background: '#990000' }} onClick={handleClickOpen}>
         {props.name}
       </Button>
       <Dialog
@@ -300,7 +296,7 @@ const AlertDialogUpdate =(props)=> {
   );
 }
 
-const AlertDialogDelete =(props)=> {
+const AlertDialogDelete = (props) => {
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -311,15 +307,15 @@ const AlertDialogDelete =(props)=> {
     setOpen(false);
   };
 
-  const handleDelete = () =>{
-    axios.delete(`/api/surveys/${props.id}`).then(() => {
-       window.location.reload();
+  const handleDelete = () => {
+    axios.delete(`/api/surveys/${props.id}/`).then(() => {
+      window.location.reload();
     }).catch((error) => { console.log(error) });
   };
 
   return (
     <div>
-      <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
+      <Button variant="contained" size="small" style={{ background: '#990000' }} onClick={handleClickOpen}>
         {props.name}
       </Button>
       <Dialog
@@ -347,7 +343,7 @@ const AlertDialogDelete =(props)=> {
   );
 }
 
-const AlertDialogView =(props)=> {
+const AlertDialogView = (props) => {
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -359,23 +355,13 @@ const AlertDialogView =(props)=> {
   };
 
   const handleConfirm = () => {
-    axios.get(`/api/sessions/?survey=${props.id}`).then(r=>{
-      if(r.status===200 && r.data.results.length>0){
-          window.open(`/result/${props.id}/${r.data.results[0].id}`,'_blank');
-          handleClose();
-      }else{
-          axios.post('/api/sessions/',{"survey":props.id}).then(res=>{
-              if(res.status===201){
-                window.open(`/result/${props.id}/${res.data.id}`,'_blank');
-                handleClose();
-              }})
-      }
-    });
+    window.open(`/result/${props.id}`, '_blank');
+    handleClose();
   }
 
   return (
     <div>
-      <Button  variant="contained" size="small" style={{ background: '#990000'}} onClick={handleClickOpen}>
+      <Button variant="contained" size="small" style={{ background: '#990000' }} onClick={handleClickOpen}>
         {props.name}
       </Button>
       <Dialog
@@ -404,7 +390,7 @@ const AlertDialogView =(props)=> {
 }
 
 
-const AlertDialogRelease =(props)=> {
+const AlertDialogRelease = (props) => {
 
   const [open, setOpen] = React.useState(false);
 
@@ -416,20 +402,14 @@ const AlertDialogRelease =(props)=> {
     setOpen(false);
   };
 
-  const handleRelease = () =>{
-    axios.get(`/api/sessions/?survey=${props.id}`).then(r=>{
-      if(r.status===200 && r.data.results.length>0){
-        axios.delete(`/api/sessions/${r.data.results[0].id}/`).then(res=>{window.open(`/released/${props.id}`,'_blank');handleClose();});
-      }else{
-        window.open(`/released/${props.id}`,'_blank');
-        handleClose();
-      }
-    });
+  const handleRelease = () => {
+    window.open(`/released/${props.id}`, '_blank');
+    handleClose();
   }
 
   return (
     <div>
-      <Button  variant="contained" size="small" style={{ background: '#FFC72C'}} onClick={handleClickOpen}>
+      <Button variant="contained" size="small" style={{ background: '#FFC72C' }} onClick={handleClickOpen}>
         {props.name}
       </Button>
       <Dialog
@@ -460,59 +440,59 @@ const AlertDialogRelease =(props)=> {
 
 const SurveyBar = (props) => {
   const [open, setOpen] = React.useState(true);
-    return (
-      <Grid container columnSpacing={0.4}>
-        <Grid item xs={4} style={{background:"C4C4C4",color:"black",textAlign:"center", fontSize: '1.5vw', fontWeight: "bold"}}>
-          <Button variant="contained" disabled style={{color:'black', width:'25vw'}}>{props.name}</Button>
-        </Grid>
-        <Grid item xs={1.2}>
-          <AlertDialogUpdate name="Update" id={props.id}/>
-        </Grid>
-        <Grid item xs={1.2}>
-          <AlertDialogDelete name="Delete" id={props.id}/>
-        </Grid>
-        <Grid item xs={1.2}>
-          <AlertDialogEmpty name="Empty" id={props.id}/>
-        </Grid>
-        <Grid item xs={1.2}>
-          <AlertDialogView name="View" id={props.id}/>
-        </Grid>
-        <Grid item xs={1.2}>
-          <AlertDialogRelease name="Release" id={props.id}/>
-        </Grid>
+  return (
+    <Grid container columnSpacing={0.4}>
+      <Grid item xs={4} style={{ background: "C4C4C4", color: "black", textAlign: "center", fontSize: '1.5vw', fontWeight: "bold" }}>
+        <Button variant="contained" disabled style={{ color: 'black', width: '25vw' }}>{props.name}</Button>
       </Grid>
-    );
-  }
+      <Grid item xs={1.2}>
+        <AlertDialogUpdate name="Update" id={props.id} />
+      </Grid>
+      <Grid item xs={1.2}>
+        <AlertDialogDelete name="Delete" id={props.id} />
+      </Grid>
+      <Grid item xs={1.2}>
+        <AlertDialogEmpty name="Empty" id={props.id} />
+      </Grid>
+      <Grid item xs={1.2}>
+        <AlertDialogView name="View" id={props.id} />
+      </Grid>
+      <Grid item xs={1.2}>
+        <AlertDialogRelease name="Release" id={props.id} />
+      </Grid>
+    </Grid>
+  );
+}
 
 
-export default function AdminTemplate(){
+export default function AdminTemplate() {
   const [surveyName, setsurveyName] = useState([]);
-  const [surveyId, setSurveyId] = useState([]); 
+  const [surveyId, setSurveyId] = useState([]);
   React.useEffect(() => {
-  axios
-   .get('/api/surveys/')
-   .then((res) => {
-    if (res.status === 200) {
-      if(res.data.count>0){
-        let nameList = [];
-        let idList = [];
-        res.data.results.forEach((q) => {
-          if(!q.draft){
-            nameList.push(q.title);
-            idList.push(q.id);
+    axios
+      .get('/api/surveys/')
+      .then((res) => {
+        if (res.status === 200) {
+          if (res.data.count > 0) {
+            let nameList = [];
+            let idList = [];
+            res.data.results.forEach((q) => {
+              if (!q.draft) {
+                nameList.push(q.title);
+                idList.push(q.id);
+              }
+            });
+            setsurveyName(nameList);
+            setSurveyId(idList);
           }
-        });
-        setsurveyName(nameList);
-        setSurveyId(idList);
-      }
-    }
-    }).catch((error) => { console.log(error) });
+        }
+      }).catch((error) => { console.log(error) });
   }, []);
 
   const [filterDisplay, setFilterDisplay] = useState([]);
   const [word, setWord] = useState("");
 
-  const handleChange = (e)=>{
+  const handleChange = (e) => {
     setWord(e);
     if (word !== "") {
       let newList = [];
@@ -526,62 +506,58 @@ export default function AdminTemplate(){
     }
   };
 
-  return(
+  return (
     <Grid container rowSpacing={2}>
       <Grid item xs={12}>
-        <ResponsiveAppBar/>
+        <ResponsiveAppBar />
       </Grid>
       <Grid item xs={9}>
-        <strong style={{color:'black', fontSize: '1.5vw', marginLeft:'5vw'}}>Survey Template</strong>
+        <strong style={{ color: 'black', fontSize: '1.5vw', marginLeft: '5vw' }}>Survey Template</strong>
       </Grid>
-      
+
       <Grid item xs={3}>
         <Search>
-        <SearchIconWrapper>
-        <SearchIcon />
-        </SearchIconWrapper>
-        <StyledInputBase
-        placeholder='Search by Keywords'
-        defaultValue={word}
-        onChange={e => handleChange(e.target.value)}
-        />
+          <SearchIconWrapper>
+            <SearchIcon />
+          </SearchIconWrapper>
+          <StyledInputBase
+            placeholder='Search by Keywords'
+            defaultValue={word}
+            onChange={e => handleChange(e.target.value)}
+          />
         </Search>
       </Grid>
 
-      {word.length==0 ?
-      surveyName.map((name,index) => (
-        <Grid container style={{marginTop:'1.5vw'}}>
-          <Grid item xs={1.5}></Grid>
-          <Grid item xs={10.5}>
-            <SurveyBar name={name} id={surveyId[index]}/>
+      {word.length == 0 ?
+        surveyName.map((name, index) => (
+          <Grid container style={{ marginTop: '1.5vw' }}>
+            <Grid item xs={1.5}></Grid>
+            <Grid item xs={10.5}>
+              <SurveyBar name={name} id={surveyId[index]} />
+            </Grid>
           </Grid>
-        </Grid>
-      )):
-      filterDisplay.map((name,index) => (
-        <Grid container style={{marginTop:'1.5vw'}}>
-          <Grid item xs={1.5}></Grid>
-          <Grid item xs={10.5}>
-            <SurveyBar name={name} id={surveyId[index]}/>
+        )) :
+        filterDisplay.map((name, index) => (
+          <Grid container style={{ marginTop: '1.5vw' }}>
+            <Grid item xs={1.5}></Grid>
+            <Grid item xs={10.5}>
+              <SurveyBar name={name} id={surveyId[index]} />
+            </Grid>
           </Grid>
-        </Grid>
-      ))
+        ))
       }
-      
-      
+
+
       <Grid item xs={10}></Grid>
       <Grid item xs={2}>
 
-      <IconButton color="primary" aria-label="add to shopping cart" onClick={()=>{
-            localStorage.setItem('surveyID','null');
-            window.open(`/admin/create_survey/new`, '_blank');
-      }}>
-
-        <AddCircleOutlineIcon style={{color:'#FFC72C'}} sx={{ fontSize: 80 }}/>
-      </IconButton>
+        <IconButton color="primary" aria-label="add to shopping cart" href='/admin/create_survey/new' target='_blank'>
+          <AddCircleOutlineIcon style={{ color: '#FFC72C' }} sx={{ fontSize: 80 }} />
+        </IconButton>
       </Grid>
-      
+
     </Grid>
   );
 };
 
-export {AdminTemplate, ResponsiveAppBar};
+export { AdminTemplate, ResponsiveAppBar };
