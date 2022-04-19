@@ -470,7 +470,7 @@ export default function AdminTemplate() {
   const [surveyId, setSurveyId] = useState([]);
   React.useEffect(() => {
     axios
-      .get('/api/surveys/')
+      .get('/api/surveys/?limit=100')
       .then((res) => {
         if (res.status === 200) {
           if (res.data.count > 0) {

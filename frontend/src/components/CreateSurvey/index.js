@@ -999,6 +999,7 @@ export default function CreateSurvey() {
             <Switch
               checked={groupID !== null}
               onChange={(e) => patchGroupQuestion()}
+              disabled={groupNum <= 1 && groupID === null}
             />
 
             {/* Whether this question's group enumeration should be in number or alphabet order */}
@@ -1009,7 +1010,7 @@ export default function CreateSurvey() {
                 patchGroupChoices(!letterGroup, groupName, groupNum);
                 setLetterGroup(!letterGroup);
               }}
-              disabled={groupID === null}
+              disabled={groupNum <= 1 && groupID === null}
             />
           </div>
           {/* End of group_by question */}
