@@ -251,6 +251,7 @@ export default function CreateSurvey() {
   //API call to change group name/number/alphabet_or_not
   function patchGroupChoices(letter, name, num) {
     if (groupID !== null) {
+      setGroupNum(num);
       let choices = groupChoices(letter, name, num);
       axios
         .patch(`/api/surveys/${surveyID}/questions/${groupID}/`, {
@@ -273,8 +274,11 @@ export default function CreateSurvey() {
       try {
         let num = e.target.value;
         if (num > 1) {
-          if (groupID === null && num > 1)
+          if (groupID !== null && num > 1)
             patchGroupChoices(letterGroup, groupName, num);
+          else {
+            setGroupNum(num);
+          }
         } else {
           setGroupNum(1);
           axios.delete(`/api/surveys/${surveyID}/questions/${groupID}/`)
@@ -981,8 +985,8 @@ export default function CreateSurvey() {
               min="1"
               max="30"
               value={groupNum}
-              onChange={(e) => setGroupNum(e.target.value)}
-              onBlur={(e) => updateGroupQuestionNum(e)}
+              onChange={(e) => updateGroupQuestionNum(e)}
+              // onBlur={(e) => updateGroupQuestionNum(e)}
               style={groupInput}
             />
             {/* How is the group calls (group, team, section, ect) */}
