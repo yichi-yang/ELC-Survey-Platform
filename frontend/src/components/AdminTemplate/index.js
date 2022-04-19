@@ -252,6 +252,7 @@ const AlertDialogEmpty =(props)=> {
 
 const AlertDialogUpdate =(props)=> {
   const [open, setOpen] = React.useState(false);
+  const navigate = useNavigate();
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -264,8 +265,7 @@ const AlertDialogUpdate =(props)=> {
   const handleUpdate = () => {
     axios.post(`/api/surveys/${props.id}/duplicate/`).then((response) => {
       localStorage.setItem('surveyID', response.data.id);
-      window.open(`/admin/create_survey/${props.id}`,'_blank');
-      handleClose();
+      navigate(`/admin/create_survey/${props.id}`);
    }).catch((error) => { console.log(error) });
   };
 
@@ -358,17 +358,15 @@ const AlertDialogView =(props)=> {
     setOpen(false);
   };
 
+  const navigate = useNavigate();
+
   const handleConfirm = () => {
     axios.get(`/api/sessions/?survey=${props.id}`).then(r=>{
       if(r.status===200 && r.data.results.length>0){
-          window.open(`/result/${props.id}/${r.data.results[0].id}`,'_blank');
-          handleClose();
+          navigate(`/result/${props.id}/${r.data.results[0].id}`)
       }else{
           axios.post('/api/sessions/',{"survey":props.id}).then(res=>{
-              if(res.status===201){
-                window.open(`/result/${props.id}/${res.data.id}`,'_blank');
-                handleClose();
-              }})
+              if(res.status===201){navigate(`/result/${props.id}/${res.data.id}`)}})
       }
     });
   }
@@ -406,6 +404,8 @@ const AlertDialogView =(props)=> {
 
 const AlertDialogRelease =(props)=> {
 
+  const navigate = useNavigate();
+
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => {
@@ -419,10 +419,9 @@ const AlertDialogRelease =(props)=> {
   const handleRelease = () =>{
     axios.get(`/api/sessions/?survey=${props.id}`).then(r=>{
       if(r.status===200 && r.data.results.length>0){
-        axios.delete(`/api/sessions/${r.data.results[0].id}/`).then(res=>{window.open(`/released/${props.id}`,'_blank');handleClose();});
+        axios.delete(`/api/sessions/${r.data.results[0].id}/`).then(res=>navigate(`/released/${props.id}`));
       }else{
-        window.open(`/released/${props.id}`,'_blank');
-        handleClose();
+        navigate(`/released/${props.id}`);
       }
     });
   }
@@ -509,6 +508,7 @@ export default function AdminTemplate(){
     }).catch((error) => { console.log(error) });
   }, []);
 
+  const navigate = useNavigate();
   const [filterDisplay, setFilterDisplay] = useState([]);
   const [word, setWord] = useState("");
 
@@ -573,7 +573,7 @@ export default function AdminTemplate(){
 
       <IconButton color="primary" aria-label="add to shopping cart" onClick={()=>{
             localStorage.setItem('surveyID','null');
-            window.open(`/admin/create_survey/new`, '_blank');
+            navigate(`/admin/create_survey/new`);
       }}>
 
         <AddCircleOutlineIcon style={{color:'#FFC72C'}} sx={{ fontSize: 80 }}/>
