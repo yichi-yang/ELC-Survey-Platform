@@ -49,7 +49,7 @@ export default function SurveyResult() {
         // This is for reference
         // console.log(response);
       });
-  }, );
+  }, []);
 
   function shortAnswer(answers) {
     const answerList = (list) =>{
