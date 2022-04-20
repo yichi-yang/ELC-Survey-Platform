@@ -1,39 +1,63 @@
-import React from 'react';
-import Button from '@material-ui/core/Button';
+import * as React from 'react';
+import { styled } from '@mui/material/styles';
+import Button from '@mui/material/Button';
+import Container from '@mui/material/Container';
+import Grid from '@mui/material/Grid';
 
-export default function StartPage(){
-  const buttonStyle = {
-    backgroundColor:'#880808', 
-    boxShadow:'none',
-    color: 'white',
-    padding: '5% 5%',
-    textTransform: 'none',
-    fontSize:'50%',
-    margin: '5vw',
-    fontWeight: 'bold',
-    width:'30%'
-  }
-  return(
-    <div style={{backgroundColor:'#990000', minHeight: '100vh',display:'flex', alignContent: 'center', justifyContent: 'center', fontSize:'4vw', flexDirection:'column', alignItems:'center'}}>
-    <div style={{display:'flex', alignContent: 'center', justifyContent: 'center', flexDirection:'column', alignItems:'center', paddingBottom:'5vh', width:'100%'}}>
-       <div> 
-         <strong style={{color:'#FFC72C'}}>ELC Survey Platform</strong>
-      </div>
+const RedButton = styled(Button)({
+  backgroundColor: '#880808',
+  boxShadow: 'none',
+  color: 'white',
+  textTransform: 'none',
+  fontSize: '2rem',
+  margin: 0,
+  fontWeight: 'bold',
+  width: '100%',
+  minHeight: '25vh',
+  '&:hover': {
+    backgroundColor: '#880808'
+  },
+});
 
-      <div style={{width:'80%', display:'flex', justifyContent:'center'}}> 
-          <Button variant='contained' 
-          style={buttonStyle} href="student">
-            I'm Student
-          </Button>
+export default function StartPage() {
+  return (
+    <div style={{
+      backgroundColor: '#990000',
+      minHeight: '100vh',
+      display: 'flex',
+      alignContent: 'center',
+      justifyContent: 'center',
+      fontSize: '4vw',
+      flexDirection: 'column',
+      alignItems: 'center',
+      paddingLeft: '10vw',
+      paddingRight: '10vw'
+    }}>
+      <Container maxWidth="lg"
+        style={{ paddingBottom: '5vh' }}>
 
-          <Button variant='contained' 
-          style={buttonStyle} href="admin">
-            I'm Admin
-          </Button>
+        <Grid container rowSpacing={{ xs: 5, md: 10 }} columnSpacing={{ xs: 5, md: 16, lg: 26 }}>
+          <Grid item xs={12} style={{ textAlign: 'center' }}>
+            <div>
+              <strong style={{ color: '#FFC72C', fontSize: '3rem' }}>ELC Survey Platform</strong>
+            </div>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <RedButton variant='contained'
+              href="student">
+              I'm Student
+            </RedButton>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <RedButton variant='contained'
+              href="admin">
+              I'm Admin
+            </RedButton>
+          </Grid>
+        </Grid>
 
-      </div>
+      </Container>
 
-    </div>
     </div>
   );
 }

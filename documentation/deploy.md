@@ -209,7 +209,7 @@ python manage.py migrate
     WantedBy=multi-user.target
     ```
 
-    `/etc/systemd/system/gunicorn.service`
+    `/etc/systemd/system/gunicorn.socket`
 
     ``` ini
     [Unit]

@@ -29,6 +29,7 @@ export default function SurveyResult() {
   const [summary, setSummary] = useState(undefined);
   const [count, setCount] = useState(0);
   const [groups, setGroups] = useState([]);
+  const [surveyName, setSurveyName] = useState('');
   
 
   //Load summary data
@@ -39,6 +40,7 @@ export default function SurveyResult() {
         if (response.status === 200) {
           setSummary(response.data.question_summary);
           setCount(response.data.submission_count);
+          setSurveyName(response.data.survey.title);
           if (response.data.group_by_question)
             setGroups(response.data.group_by_question.choices);
             //  The group choices: Array(2)
@@ -53,22 +55,27 @@ export default function SurveyResult() {
 
   function shortAnswer(answers) {
     const answerList = (list) =>{
-      return(
-        list.map((answer, i) => {
-          return (
-            <div
-              style={{ margin: '0.3% 1%', fontSize: '0.8em' }}
-              key={i}
-            >{`${i + 1}. ${answer}`}</div>
-          );
-        })
-      )
+      
+      if(list.length===0){
+        return <div style={{color:'grey',fontSize:'0.8em', margin: '0.3% 1%'}}>No Answers Yet</div>
+      }else{
+        return(
+          list.map((answer, i) => {
+            return (
+              <div
+                style={{ margin: '0.3% 1%', fontSize: '0.8em' }}
+                key={i}
+              >{`${i + 1}. ${answer}`}</div>
+            );
+          })
+        )
+      }
     }
     return (
       <div>
       {answers.by_group?<div>
         {groups.map(group=>(
-          <div style={{margin:'1%'}}>
+          <div style={{margin:'1%'}} key={group.id}>
             <strong>{group.description}</strong>
             {answerList(answers.by_group[group.id].answers)}
           </div>
@@ -83,7 +90,7 @@ export default function SurveyResult() {
       <div>
       {answers.by_group?<div>
         {groups.map(group=>(
-          <div style={{margin:'1%'}}>
+          <div style={{margin:'1%'}} key={group.id}>
             <strong>{group.description}</strong>
             <PieChart question={answers} index={group.id}/>
           </div>
@@ -113,7 +120,7 @@ export default function SurveyResult() {
           <div
             style={{ fontSize: '1.5em', textAlign: 'center', margin: '-1%' }}
           >
-            <strong>surveyName</strong>
+            <strong>{surveyName}</strong>
           </div>
           <div
             style={{

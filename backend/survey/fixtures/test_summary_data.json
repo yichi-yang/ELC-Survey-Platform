@@ -1,0 +1,554 @@
+[
+    {
+        "model": "auth.user",
+        "pk": 1,
+        "fields": {
+            "password": "pbkdf2_sha256$320000$0KdxFMbS02kusdNE3FdWw1$UVFHXQwjZWk4yQeyQEshP4x4+cSb+yufM2OLR6uVUHA=",
+            "last_login": "2022-04-10T21:58:25.511Z",
+            "is_superuser": false,
+            "username": "test",
+            "first_name": "",
+            "last_name": "",
+            "email": "",
+            "is_staff": false,
+            "is_active": true,
+            "date_joined": "2022-04-10T21:38:24.411Z",
+            "groups": [],
+            "user_permissions": []
+        }
+    },
+    {
+        "model": "survey.survey",
+        "pk": "Wl95e9L",
+        "fields": {
+            "title": "Test Survey Summary",
+            "description": "test 123",
+            "draft": false,
+            "group_by_question": "vQVx1jW",
+            "created_at": "2022-04-10T21:41:04.150Z"
+        }
+    },
+    {
+        "model": "survey.surveysession",
+        "pk": "4wNwX6O",
+        "fields": {
+            "code": 1958,
+            "survey": "Wl95e9L",
+            "owner": 1,
+            "created_at": "2022-04-10T21:43:24.848Z"
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "yO5lED9",
+        "fields": {
+            "survey": "Wl95e9L",
+            "number": 1,
+            "title": "Question 1",
+            "required": false,
+            "type": "MC",
+            "range_min": null,
+            "range_max": null,
+            "range_default": null,
+            "range_step": null
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "R7jNpDG",
+        "fields": {
+            "survey": "Wl95e9L",
+            "number": 2,
+            "title": "Question 2",
+            "required": false,
+            "type": "MC",
+            "range_min": null,
+            "range_max": null,
+            "range_default": null,
+            "range_step": null
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "Lo5MY5R",
+        "fields": {
+            "survey": "Wl95e9L",
+            "number": 3,
+            "title": "Question 3",
+            "required": false,
+            "type": "CB",
+            "range_min": null,
+            "range_max": null,
+            "range_default": null,
+            "range_step": null
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "GajwyDE",
+        "fields": {
+            "survey": "Wl95e9L",
+            "number": 4,
+            "title": "Question 4",
+            "required": false,
+            "type": "SA",
+            "range_min": null,
+            "range_max": null,
+            "range_default": null,
+            "range_step": null
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "O2VeYVd",
+        "fields": {
+            "survey": "Wl95e9L",
+            "number": 5,
+            "title": "Question 5",
+            "required": false,
+            "type": "RK",
+            "range_min": 1.0,
+            "range_max": 5.0,
+            "range_default": 1.0,
+            "range_step": 1.0
+        }
+    },
+    {
+        "model": "survey.surveyquestion",
+        "pk": "vQVx1jW",
+        "fields": {
+            "survey": "Wl95e9L",
+            "number": 6,
+            "title": "Which Group are you in?",
+            "required": true,
+            "type": "DP",
+            "range_min": null,
+            "range_max": null,
+            "range_default": null,
+            "range_step": null
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "m2OkayZ",
+        "fields": {
+            "question": "yO5lED9",
+            "value": "1",
+            "description": "A"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "WKo1dyZ",
+        "fields": {
+            "question": "yO5lED9",
+            "value": "2",
+            "description": "B"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "GDOaMOj",
+        "fields": {
+            "question": "yO5lED9",
+            "value": "3",
+            "description": "C"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "LjyRko9",
+        "fields": {
+            "question": "yO5lED9",
+            "value": "4",
+            "description": "D"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "D9NXgO6",
+        "fields": {
+            "question": "R7jNpDG",
+            "value": "1",
+            "description": "1"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "M9O2bOA",
+        "fields": {
+            "question": "R7jNpDG",
+            "value": "2",
+            "description": "2"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "wKoPloR",
+        "fields": {
+            "question": "R7jNpDG",
+            "value": "3",
+            "description": "3"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "MgyreN6",
+        "fields": {
+            "question": "R7jNpDG",
+            "value": "4",
+            "description": "4.0"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "B4OBvO2",
+        "fields": {
+            "question": "Lo5MY5R",
+            "value": "1",
+            "description": "Apple"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "eMNVmOD",
+        "fields": {
+            "question": "Lo5MY5R",
+            "value": "2",
+            "description": "Banana"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "wGo71N5",
+        "fields": {
+            "question": "O2VeYVd",
+            "value": "1",
+            "description": "CEO"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "DMNxbo0",
+        "fields": {
+            "question": "O2VeYVd",
+            "value": "2",
+            "description": "COO"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "54Only0",
+        "fields": {
+            "question": "O2VeYVd",
+            "value": "3",
+            "description": "CFO"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "anyGzNM",
+        "fields": {
+            "question": "vQVx1jW",
+            "value": "1",
+            "description": "Group 1"
+        }
+    },
+    {
+        "model": "survey.surveyquestionchoice",
+        "pk": "k2Odnya",
+        "fields": {
+            "question": "vQVx1jW",
+            "value": "2",
+            "description": "Group 2"
+        }
+    },
+    {
+        "model": "survey.surveysubmission",
+        "pk": "wYx2LZ7",
+        "fields": {
+            "session": "4wNwX6O",
+            "submission_time": "2022-04-10T21:43:55.850Z"
+        }
+    },
+    {
+        "model": "survey.surveysubmission",
+        "pk": "7rZoWZ4",
+        "fields": {
+            "session": "4wNwX6O",
+            "submission_time": "2022-04-10T21:44:25.094Z"
+        }
+    },
+    {
+        "model": "survey.surveysubmission",
+        "pk": "nlZjdxe",
+        "fields": {
+            "session": "4wNwX6O",
+            "submission_time": "2022-04-10T21:44:47.377Z"
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 1,
+        "fields": {
+            "submission": "wYx2LZ7",
+            "question": "vQVx1jW",
+            "choice": "anyGzNM",
+            "text": null,
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 2,
+        "fields": {
+            "submission": "wYx2LZ7",
+            "question": "yO5lED9",
+            "choice": "m2OkayZ",
+            "text": null,
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 3,
+        "fields": {
+            "submission": "wYx2LZ7",
+            "question": "R7jNpDG",
+            "choice": "D9NXgO6",
+            "text": null,
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 4,
+        "fields": {
+            "submission": "wYx2LZ7",
+            "question": "Lo5MY5R",
+            "choice": "B4OBvO2",
+            "text": null,
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 5,
+        "fields": {
+            "submission": "wYx2LZ7",
+            "question": "GajwyDE",
+            "choice": null,
+            "text": "answer 1",
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 6,
+        "fields": {
+            "submission": "wYx2LZ7",
+            "question": "O2VeYVd",
+            "choice": "wGo71N5",
+            "text": null,
+            "numeric_value": 1.0
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 7,
+        "fields": {
+            "submission": "wYx2LZ7",
+            "question": "O2VeYVd",
+            "choice": "DMNxbo0",
+            "text": null,
+            "numeric_value": 3.0
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 8,
+        "fields": {
+            "submission": "wYx2LZ7",
+            "question": "O2VeYVd",
+            "choice": "54Only0",
+            "text": null,
+            "numeric_value": 5.0
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 9,
+        "fields": {
+            "submission": "7rZoWZ4",
+            "question": "vQVx1jW",
+            "choice": "k2Odnya",
+            "text": null,
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 10,
+        "fields": {
+            "submission": "7rZoWZ4",
+            "question": "yO5lED9",
+            "choice": "m2OkayZ",
+            "text": null,
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 11,
+        "fields": {
+            "submission": "7rZoWZ4",
+            "question": "R7jNpDG",
+            "choice": "M9O2bOA",
+            "text": null,
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 12,
+        "fields": {
+            "submission": "7rZoWZ4",
+            "question": "GajwyDE",
+            "choice": null,
+            "text": "answer 2",
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 13,
+        "fields": {
+            "submission": "7rZoWZ4",
+            "question": "O2VeYVd",
+            "choice": "wGo71N5",
+            "text": null,
+            "numeric_value": 3.0
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 14,
+        "fields": {
+            "submission": "7rZoWZ4",
+            "question": "O2VeYVd",
+            "choice": "DMNxbo0",
+            "text": null,
+            "numeric_value": 2.0
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 15,
+        "fields": {
+            "submission": "7rZoWZ4",
+            "question": "O2VeYVd",
+            "choice": "54Only0",
+            "text": null,
+            "numeric_value": 4.0
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 16,
+        "fields": {
+            "submission": "nlZjdxe",
+            "question": "vQVx1jW",
+            "choice": "anyGzNM",
+            "text": null,
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 17,
+        "fields": {
+            "submission": "nlZjdxe",
+            "question": "yO5lED9",
+            "choice": "GDOaMOj",
+            "text": null,
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 18,
+        "fields": {
+            "submission": "nlZjdxe",
+            "question": "R7jNpDG",
+            "choice": "M9O2bOA",
+            "text": null,
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 19,
+        "fields": {
+            "submission": "nlZjdxe",
+            "question": "Lo5MY5R",
+            "choice": "eMNVmOD",
+            "text": null,
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 20,
+        "fields": {
+            "submission": "nlZjdxe",
+            "question": "Lo5MY5R",
+            "choice": "B4OBvO2",
+            "text": null,
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 21,
+        "fields": {
+            "submission": "nlZjdxe",
+            "question": "GajwyDE",
+            "choice": null,
+            "text": "answer 3",
+            "numeric_value": null
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 22,
+        "fields": {
+            "submission": "nlZjdxe",
+            "question": "O2VeYVd",
+            "choice": "DMNxbo0",
+            "text": null,
+            "numeric_value": 4.0
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 23,
+        "fields": {
+            "submission": "nlZjdxe",
+            "question": "O2VeYVd",
+            "choice": "54Only0",
+            "text": null,
+            "numeric_value": 2.0
+        }
+    },
+    {
+        "model": "survey.surveyresponse",
+        "pk": 24,
+        "fields": {
+            "submission": "nlZjdxe",
+            "question": "O2VeYVd",
+            "choice": "wGo71N5",
+            "text": null,
+            "numeric_value": 5.0
+        }
+    }
+]
