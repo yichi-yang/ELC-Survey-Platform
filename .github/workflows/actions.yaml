@@ -92,9 +92,9 @@ jobs:
         uses: ncipollo/release-action@v1
         if: github.event_name == 'push'
         with:
-          allowUpdates: true
+          name: ${{ github.ref_name }}
+          tag: 'auto-build-${{ github.run_number }}'
+          commit: ${{ github.sha }}
           artifacts: frontend.zip
-          body: 'commit ${{ github.sha }}'
-          tag: '${{ github.ref_name }}-latest'
           prerelease: true
           token: ${{ secrets.GITHUB_TOKEN }}
