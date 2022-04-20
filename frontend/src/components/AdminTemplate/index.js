@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import AppBar from '@mui/material/AppBar';
 import { styled, alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -23,7 +23,6 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import Input from '@mui/material/Input';
 
 const pages = [];
 const settings = ['Logout'];
@@ -458,7 +457,6 @@ const AlertDialogRelease =(props)=> {
 
 
 const SurveyBar = (props) => {
-  const [open, setOpen] = React.useState(true);
     return (
       <Grid container columnSpacing={0.4}>
         <Grid item xs={4} style={{background:"C4C4C4",color:"black",textAlign:"center", fontSize: '1.5vw', fontWeight: "bold"}}>
@@ -483,10 +481,29 @@ const SurveyBar = (props) => {
     );
   }
 
+  const DraftBar = (props) => {
+
+      return (
+        <Grid container columnSpacing={0.4}>
+          <Grid item xs={4} style={{background:"C4C4C4",color:"black",textAlign:"center", fontSize: '1.5vw', fontWeight: "bold"}}>
+            <Button variant="contained" disabled style={{color:'black', width:'25vw'}}>{props.name}</Button>
+          </Grid>
+          <Grid item xs={1.2}>
+            <AlertDialogUpdate name="Update" id={props.id}/>
+          </Grid>
+          <Grid item xs={1.2}>
+            <AlertDialogDelete name="Delete" id={props.id}/>
+          </Grid>
+        </Grid>
+      );
+    }
+
 
 export default function AdminTemplate(){
   const [surveyName, setsurveyName] = useState([]);
-  const [surveyId, setSurveyId] = useState([]); 
+  const [surveyId, setSurveyId] = useState([]);
+  const [draftName, setdraftName] = useState([]);
+  const [draftId, setdraftId] = useState([]);
   React.useEffect(() => {
   axios
     .get('/api/surveys/?limit=100')
@@ -495,14 +512,22 @@ export default function AdminTemplate(){
       if(res.data.count>0){
         let nameList = [];
         let idList = [];
+        let draftnameList = [];
+        let draftidList = [];
+        console.log(res.data.results)
         res.data.results.forEach((q) => {
           if(!q.draft){
             nameList.push(q.title);
             idList.push(q.id);
+          }else{
+            draftnameList.push(q.title);
+            draftidList.push(q.id);
           }
         });
         setsurveyName(nameList);
         setSurveyId(idList);
+        setdraftName(draftnameList);
+        setdraftId(draftidList);
       }
     }
     }).catch((error) => { console.log(error) });
@@ -532,7 +557,7 @@ export default function AdminTemplate(){
         <ResponsiveAppBar/>
       </Grid>
       <Grid item xs={9}>
-        <strong style={{color:'black', fontSize: '1.5vw', marginLeft:'5vw'}}>Survey Template</strong>
+        
       </Grid>
       
       <Grid item xs={3}>
@@ -548,7 +573,11 @@ export default function AdminTemplate(){
         </Search>
       </Grid>
 
-      {word.length==0 ?
+      <Grid item xs={9}>
+        <strong style={{color:'black', fontSize: '1.5vw', marginLeft:'5vw'}}>Survey Template</strong>
+      </Grid>
+
+      {word.length===0 ?
       surveyName.map((name,index) => (
         <Grid container style={{marginTop:'1.5vw'}}>
           <Grid item xs={1.5}></Grid>
@@ -566,8 +595,20 @@ export default function AdminTemplate(){
         </Grid>
       ))
       }
+
+      <Grid item xs={9}>
+        <strong style={{color:'black', fontSize: '1.5vw', marginLeft:'5vw'}}>Draft Section</strong>
+      </Grid>
+
       
-      
+      {draftName.map((name,index) => (
+        <Grid container style={{marginTop:'1.5vw'}}>
+          <Grid item xs={1.5}></Grid>
+          <Grid item xs={10.5}>
+            <DraftBar name={name} id={draftId[index]}/>
+          </Grid>
+        </Grid>
+      ))}
       <Grid item xs={10}></Grid>
       <Grid item xs={2}>
 
