@@ -56,6 +56,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write # for making a release
+
     steps:
       - uses: actions/checkout@v2
 
@@ -74,8 +77,24 @@ jobs:
         working-directory: frontend
         run: CI=false npm run build
 
+      - uses: papeloto/action-zip@v1
+        with:
+          files: frontend/build/
+          dest: frontend.zip
+
       - name: Save frontend build
         uses: actions/upload-artifact@v3
         with:
-          name: frontend
-          path: frontend/build/
+          name: frontend.zip
+          path: frontend.zip
+
+      - name: Make release
+        uses: ncipollo/release-action@v1
+        if: github.event_name == 'push'
+        with:
+          allowUpdates: true
+          artifacts: frontend.zip
+          body: 'commit ${{ github.sha }}'
+          tag: '${{ github.ref_name }}-latest'
+          prerelease: true
+          token: ${{ secrets.GITHUB_TOKEN }}
