@@ -6,7 +6,7 @@ name: CI
 on:
   # Triggers the workflow on push and pull request events for main and develop branch
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, fix-ci-release ]
 
   pull_request:
     branches: [ main, develop ]
@@ -93,8 +93,10 @@ jobs:
         if: github.event_name == 'push'
         with:
           allowUpdates: true
+          removeArtifacts: true
+          name: '${{ github.ref_name }}-latest'
+          tag: 'auto-build-${{ github.run_number }}'
+          commit: ${{ github.sha }}
           artifacts: frontend.zip
-          body: 'commit ${{ github.sha }}'
-          tag: '${{ github.ref_name }}-latest'
           prerelease: true
           token: ${{ secrets.GITHUB_TOKEN }}
