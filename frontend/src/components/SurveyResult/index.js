@@ -6,8 +6,6 @@ import IconButton from '@mui/material/IconButton';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import axios from 'axios';
 
-const data= [65, 59, 80, 81, 56];
-
 const resultArea = {
   width: '90%',
   margin: 'auto',
@@ -24,7 +22,7 @@ function title(number, title) {
 }
 
 export default function SurveyResult() {
-  let { surveyID, sessionID } = useParams();
+  let {sessionID } = useParams();
   const navigate = useNavigate();
   const [summary, setSummary] = useState(undefined);
   const [count, setCount] = useState(0);
@@ -49,9 +47,9 @@ export default function SurveyResult() {
         }
         //  TODO: log to be deleted after finishing this page
         // This is for reference
-        console.log(response);
+        // console.log(response);
       });
-  }, []);
+  }, );
 
   function shortAnswer(answers) {
     const answerList = (list) =>{
@@ -139,6 +137,7 @@ export default function SurveyResult() {
             {/* map out the results for each questions */}
             {summary.map((question, i) => {
               let type = question.question.type;
+              console.log(question);
               return (
                 <div key={i}>
                   {title(i + 1, question.question.title)}
