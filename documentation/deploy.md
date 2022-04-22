@@ -111,14 +111,19 @@ just search for those.
   in `ALLOWED_HOSTS`, e.g. `ALLOWED_HOSTS=['example.com', '203.0.113.1']`.
   [[?]](https://docs.djangoproject.com/en/4.0/ref/settings/#allowed-hosts)
 
-5. Configure the **default** database in `DATABASES` to use your production
+5. You need to put `https://your-domain-name` in `CSRF_TRUSTED_ORIGINS`,
+  e.g. `CSRF_TRUSTED_ORIGINS = ['https://example.com']`. This protects the
+  API from cross-site request forgery attacks.
+  [[?]](https://docs.djangoproject.com/en/4.0/ref/settings/#csrf-trusted-origins)
+
+6. Configure the **default** database in `DATABASES` to use your production
   database. Refer to [Django documentation](https://docs.djangoproject.com/en/4.0/ref/settings/#databases)
   for how to configure postgresql, mysql, etc. backends.
 
-6. Leave `SECURE_HSTS_SECONDS` commented out for now.
+7. Leave `SECURE_HSTS_SECONDS` commented out for now.
   [[?]](https://docs.djangoproject.com/en/4.0/ref/settings/#secure-hsts-seconds)
 
-7. Leave `STATIC_ROOT` commented out for now.
+8. Leave `STATIC_ROOT` commented out for now.
   [[?]](https://docs.djangoproject.com/en/4.0/ref/settings/#static-root)
 
 Note this is the minimal configuration necessary to get the backend running.
