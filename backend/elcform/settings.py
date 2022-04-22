@@ -33,6 +33,10 @@ DEBUG = True
 # e.g. ALLOWED_HOSTS = ['example.com']
 ALLOWED_HOSTS = []
 
+# TODO: add https://your-domain-name here
+# e.g. CSRF_TRUSTED_ORIGINS = ['https://example.com']
+CSRF_TRUSTED_ORIGINS = []
+
 
 # Application definition
 
