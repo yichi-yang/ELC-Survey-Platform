@@ -1,5 +1,9 @@
 # Deploying ELC Form
 
+> Note: We recommend following the guide in the exact order written.
+> Some parts may not make sense if you skip over earlier sections and you will
+> likely run into problems.
+
 ## Backend
 
 In this section, we will deploy the backed on a Ubuntu 20.04 server. We will
@@ -65,6 +69,23 @@ and a domain that resolves to this server.
     ``` bash
     pip install -r requirements.deploy.txt
     ```
+
+### Install Database Driver
+
+Depending on the database you plan to use, you may need to install a matching
+database driver. Please refer to the
+[Django documentation](https://docs.djangoproject.com/en/4.0/ref/databases/)
+and check if a database driver is required for your database.
+
+For example, to connect to a MySQL database, you need to install `mysqlclient`.
+
+``` bash
+# if haven't activated your venv already
+source venv/bin/activate
+
+# install mysqlclient
+pip install mysqlclient
+```
 
 ### Backend Configuration
 
@@ -149,7 +170,7 @@ python manage.py migrate
 
     By default Gunicorn listens on the loopback interface only. To make it listen
     on all interfaces so you can access the backend API from your browser,
-    use `gunicorn elcform.wsgi -b 0.0.0.0:8080`. If you open
+    use `gunicorn elcform.wsgi -b 0.0.0.0:8000`. If you open
     `http://example.com:8000/api/` (replace with your domain) in your browser, you
     should see 'Api Root', but the page looks broken since static files
     (\*.js, \*.css, etc.) are not served. We will set up a web server to serve
@@ -278,13 +299,22 @@ python manage.py migrate
 
 We will set up a webserver to:
 
-1. Serve static files (\*.js, \*.css, etc.) including the fronted files
-2. Proxy API requests to Gunicorn
-3. SSL termination
+1. For `/api/*` and `/django-admin/*` run a reverse proxy to the UNIX
+    socket that Gunicorn is listening on (`/run/gunicorn.sock`).
+2. For the rest, serve from some directory containing static files
+    (e.g. `/var/www/html`). The webserver should first check to see
+    if a matching file exists. If so, it should serve that file; if not
+    it should serve index.html. This allows the frontend (single page app)
+    to handle routing internally.
+3. Set up SSL termination. The webserver should listen for https traffic on
+    port 443, and redirect all http traffic to port 443. It should have a
+    valid certificate (you can use, for example, letsencrypt).
 
-We will use Caddy in this section since it's easy to set up. You can use
-any webserver you like, such as Nginx or Apache HTTP Server, but configuring
-those webserver is outside the scope of this guide.
+The following subsections show you how to do the above 3 things with Caddy
+or Nginx. You can use any webserver you like, but configuring those webserver
+is outside the scope of this guide.
+
+#### Caddy
 
 1. First we need to install Caddy.
 
@@ -324,7 +354,7 @@ those webserver is outside the scope of this guide.
             # Set this path to your site's directory.
             root * /var/www/html
 
-            # see if the requested file exists server-side
+            # See if the requested file exists server-side
             try_files {path} /index.html
 
             # Enable the static file server.
@@ -338,19 +368,6 @@ those webserver is outside the scope of this guide.
 
     Note you need to replace `example.com` with your domain.
 
-    If you are using a webserver other than Caddy, you need to:
-
-    1. For `/api/*` and `/django-admin/*` run a reverse proxy to the UNIX
-        socket that Gunicorn is listening on (`/run/gunicorn.sock`).
-    2. For the rest, serve from some directory containing static files
-        (e.g. `/var/www/html`). The webserver should first check to see
-        if a matching file exists. If so, it should serve that file; if not
-        it should serve index.html. This allows the frontend (single page app)
-        to handle routing internally.
-    3. Set up SSL termination. The webserver should listen for https traffic on
-        port 443, and redirect all http traffic to port 443. It should have a
-        valid certificate (you can use letsencrypt).
-
     > :warning: **Warning**:
     > Caddy automatically gets certificates from letsencrypt and configures
     > https for you if you have a public domain, set up DNS correctly, and
@@ -360,23 +377,103 @@ those webserver is outside the scope of this guide.
     > SSL termination to make sure traffic is encrypted. Otherwise, passwords
     > will be sent in clear text.
 
-3. Now the configuration.
+3. Reload the configuration.
 
     ``` bash
     sudo systemctl reload caddy
     ```
 
 4. Now if you go to `https://example.com/api/` (replace with your domain) you
-    should once again see 'Api Root'. It still looks broken but we will fix that
-    next. Make sure that https works correctly.
+    should see 'Api Root'. It still looks broken but we will fix that next.
+    Make sure that https works correctly.
 
-5. Pick a directory to serve static files from. We recommend `/var/www/html`.
-    Edit the backend configuration file `elcform/settings.py` and set
-    `STATIC_ROOT` to `django-static` in that directory,
+#### Nginx
+
+1. Install Nginx (if it's not installed already).
+
+    ``` bash
+    sudo apt update
+    sudo apt install nginx
+    ```
+
+    Now navigating to your domain in a browser should show Nginx's welcome page.
+
+2. Add a new site configuration to `/etc/nginx/sites-available/`.
+
+    `/etc/nginx/sites-available/elcform`
+
+    ``` text
+    server {
+        listen 443 ssl;
+
+        # You can use certbot to issue a certificate,
+        # see https://certbot.eff.org/.
+        ssl_certificate /path/to/certificate;
+        ssl_certificate_key /path/to/certificate_key;
+
+        server_name example.com;
+        
+        # static file
+        location / {
+            # Set this path to your site's directory.
+            root /var/www/html;
+
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Proxy to our django app (gunicorn)
+        location ~ ^/(api|django-admin)/ {
+            proxy_set_header X-Forwarded-Host $host:$server_port;
+            proxy_set_header X-Forwarded-Server $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_pass http://unix:/run/gunicorn.sock;
+        }
+    }
+
+    # redirect http -> https
+    server {
+        listen 80;
+        server_name example.com;
+        return 301 https://$host$request_uri;
+    }
+    ```
+
+    Note you need to replace `example.com` with your domain.
+
+3. Enable your site (by making a symbolic link).
+
+    ``` bash
+    ln -s /etc/nginx/sites-available/elcform /etc/nginx/sites-enabled/elcform
+    ```
+
+4. Reload the configuration.
+
+    ``` bash
+    # test your config to make sure it's valid
+    sudo nginx -t
+
+    # reload Nginx
+    sudo nginx -s reload
+    ```
+
+5. Now if you go to `https://example.com/api/` (replace with your domain) you
+    should see 'Api Root'. It still looks broken but we will fix that next.
+    Make sure that https works correctly.
+
+### Collect Backend Static Files
+
+Now we'll fix `https://example.com/api/` page by collecting backend static
+files (css, js) into the *static file directory*. The *static file directory*
+is the path after `root` in your Caddyfile or Nginx configuration
+(`/var/www/html` in the above example).
+
+1. Go back to `elcform/settings.py`, set `STATIC_ROOT` to `django-static`
+    within the *static file directory*,
     e.g. `STATIC_ROOT = '/var/www/html/django-static'`.
     [[?]](https://docs.djangoproject.com/en/4.0/ref/settings/#static-root)
 
-6. Use `python manage.py collectstatic` to copy all the static files for the
+2. Use `python manage.py collectstatic` to copy all the static files for the
     backend to `STATIC_ROOT`.
 
     ``` bash
@@ -398,8 +495,32 @@ those webserver is outside the scope of this guide.
 ## Frontend
 
 After setting up the backend and the webserver, setting up the frontend is
-relatively easy. All you need to do is to build the frontend and copy the
-files into the static file directory.
+relatively easy. All you need to do is to copy the frontend static files into
+the *static file directory*.
+
+### Building the Frontend
+
+You can either download a prebuilt version of the frontend or build from source.
+If you don't need to change anything we recommend using the prebuilt version.
+
+#### Using Prebuilt Frontend
+
+We have the latest build of our frontend
+[here](https://github.com/yichi-yang/ELC-Survey-Platform/releases/latest).
+You can download the latest frontend build like this:
+
+``` bash
+# download the latest release
+wget https://github.com/yichi-yang/ELC-Survey-Platform/releases/latest/download/frontend.zip
+
+# create a directory to unzip into
+mkdir build
+
+# unzip the zip file
+unzip frontend.zip -d build
+```
+
+#### Building From Source
 
 > Note: Building the frontend requires > 1.8 GB of RAM. If your server has
 > < 2 GB of RAM, building the frontend can lead to thrashing and take forever
@@ -426,7 +547,11 @@ files into the static file directory.
     npm run build
     ```
 
-4. Copy everything from `build` to the static file directory you picked earlier.
+### Copy to the Static File Directory
+
+Next, you need to copy the frontend build into the *static file directory*.
+
+1. Copy everything from `build` to the *static file directory*.
 
     ``` bash
     sudo cp -a build/. /var/www/html/
@@ -449,7 +574,7 @@ files into the static file directory.
     #     └── js
     ```
 
-5. Now if you go to `https://example.com/` (replace with your domain) you should
+2. Now if you go to `https://example.com/` (replace with your domain) you should
     see the frontend working.
 
 ## Security Considerations
