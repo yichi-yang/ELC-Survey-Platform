@@ -108,6 +108,9 @@ export default function SurveyPage() {
     const [requiredAlert, setrequiredAlert] = useState(false);
     /* Success: submitted the form successfully */
     const [submissionSuccess, setSubmissionSuccess] = useState(false);
+    // For correct numbering of the questions
+    const [groupPresent, setGroupPresent] = useState(Number.MAX_SAFE_INTEGER);
+
     /* Dropdown OnChange*/
     const handleRoomChange = (event) => {
         /* Display value on the dropdown */
@@ -199,24 +202,6 @@ export default function SurveyPage() {
     };
 
     const submitForm = (res, requiredCheck) => {
-        /*
-        console.log("submit");
-        console.log(res);
-        console.log("required");
-        console.log(requiredCheck);
-        let hasNotFilled = false;
-        let filledQuestion = res.map((item) => {
-            return item.question
-        })
-        requiredCheck.map((id)=>{
-            if(!filledQuestion.includes(id)){
-                console.log("not found")
-                console.log(id)
-                hasNotFilled = true;
-                setrequiredAlert(true);
-            }
-        })
-        */
         let submissionData = { "responses": res };
 
         axios
@@ -235,21 +220,6 @@ export default function SurveyPage() {
     }
 
 
-    // 测试state用
-    /*
-    useEffect(() => {
-        //console.log("最新值")
-        //console.log(checkBoxChoices)
-        let temporary = []
-        for (var i = 0; i < checkBoxChoices; i++) {
-            //console.log('questionList');
-            //console.log(questionList);
-            temporary.push(false)
-        }
-        setCheckList([...temporary])
-    }, [checkBoxChoices])
-    */
-
     useEffect(() => {
         console.log("checkList最新值")
         console.log(checkList)
@@ -264,10 +234,12 @@ export default function SurveyPage() {
             })
         axios
             .get(`/api/surveys/${surveyID}/questions/`)
-            .then((res) => res.data.map((question) => {
+            .then((res) => res.data.map((question,i) => {
                 /* Room Number Generator */
                 let room_array = [];
                 if (question.type === 'DP') {
+                    // record the index of the group question for correct numbering calculation later
+                    setGroupPresent(i); 
                     question.choices.map((choice) => {
                         room_array.push(choice.value)
                     });
@@ -284,6 +256,7 @@ export default function SurveyPage() {
             }));
     }, []);
 
+
     return (
         <div style={bodyStyle}>
             <div style={headingStyle}>
@@ -295,15 +268,23 @@ export default function SurveyPage() {
                 {/* Radio group selection */}
                 {questionList.map((q) => {
                     if (q.type === 'DP') {
+                        // Obtaining the naming of the group question
+                        let tmp = q.choices[0].description;
+                        let cut = q.choices.length.toString.length + 1;
+                        if (tmp[tmp.length - 1] === 'A') {
+                            cut = 2;
+                        }
+                        let title = tmp.substr(0, tmp.length - cut);
+                        
                         return (
                             <div style={questionMargin}>
                                 <FormControl style={{ width: '40%' }}>
                                     {/* Room number selection */}
-                                    <InputLabel id="demo-simple-select-label">Room Number<strong>(*)</strong></InputLabel>
+                                    <InputLabel id="demo-simple-select-label">{`${title} Number`}<strong>(*)</strong></InputLabel>
                                     <Select
                                         name={q.id}
                                         value={room}
-                                        label="RoomNumber"
+                                        label={`${title} Number`}
                                         onChange={handleRoomChange}
                                     >
                                         {q.choices.map((c) => {
@@ -318,12 +299,12 @@ export default function SurveyPage() {
                     }
                 })}
 
-                {questionList.map((q) => {
+                {questionList.map((q,i) => {
                     if (q.type === 'MC') {
                         return (
                             <div style={questionMargin}>
                                 <FormControl>
-                                    {q.required ? (<div>Question {q.number}. {q.title}<strong>(*)</strong> </div>) : (<div>Question {q.number}. {q.title}</div>)}
+                                    {q.required ? (<div>Question {i+1-Math.max(0,Math.min(1,i-groupPresent))}. {q.title}<strong>(*)</strong> </div>) : (<div>Question {i+1-Math.max(0,Math.min(1,i-groupPresent))}. {q.title}</div>)}
                                     <RadioGroup
                                         aria-labelledby="demo-radio-buttons-group-label"
                                         defaultValue="female"
@@ -343,7 +324,7 @@ export default function SurveyPage() {
                         return (
                             <div style={questionMargin}>
                                 <FormControl component="fieldset" variant="standard">
-                                    {q.required ? (<div>Question {q.number}. {q.title}<strong>(*)</strong> </div>) : (<div>Question {q.number}. {q.title}</div>)}
+                                    {q.required ? (<div>Question {i+1-Math.max(0,Math.min(1,i-groupPresent))}. {q.title}<strong>(*)</strong> </div>) : (<div>Question {i+1-Math.max(0,Math.min(1,i-groupPresent))}. {q.title}</div>)}
                                     <FormLabel component="legend">You may select more than one options</FormLabel>
                                     <FormGroup>
                                         {
@@ -366,7 +347,7 @@ export default function SurveyPage() {
                     else if (q.type === 'SA' || q.type === 'PA') {
                         return (
                             <div style={questionMargin}>
-                                {q.required ? (<div>Question {q.number}. {q.title}<strong>(*)</strong> </div>) : (<div>Question {q.number}. {q.title}</div>)}
+                                {q.required ? (<div>Question {i+1-Math.max(0,Math.min(1,i-groupPresent))}. {q.title}<strong>(*)</strong> </div>) : (<div>Question {i+1-Math.max(0,Math.min(1,i-groupPresent))}. {q.title}</div>)}
                                 <TextField id={q.id} label="Type here..." variant="standard"
                                     style={{ width: '70%' }} onChange={newHandleTextChange} />
                             </div>
@@ -379,7 +360,7 @@ export default function SurveyPage() {
                         }
                         return (
                             <div style={questionMargin}>
-                                {q.required ? (<div>Question {q.number}. {q.title}<strong>(*)</strong> </div>) : (<div>Question {q.number}. {q.title}</div>)}
+                                {q.required ? (<div>Question {i+1-Math.max(0,Math.min(1,i-groupPresent))}. {q.title}<strong>(*)</strong> </div>) : (<div>Question {i+1-Math.max(0,Math.min(1,i-groupPresent))}. {q.title}</div>)}
                                 {q.choices.map((item) => {
                                     return (
                                         <div
